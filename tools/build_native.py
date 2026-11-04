@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the independent arm64 helper using an existing iPhoneOS toolchain."""
+"""Build the independent arm64 helpers using an existing iPhoneOS toolchain."""
 import argparse
 import hashlib
 import json
@@ -12,6 +12,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+VERSION = "0.3.0"
 
 
 def run(args, seconds=120):
@@ -27,6 +28,39 @@ def run(args, seconds=120):
         raise RuntimeError("%s failed: %s" % (args[0], err[-6000:]))
     return {"tool": Path(str(args[0])).name, "exit": process.returncode,
             "stdout": out[-2000:], "stderr": err[-4000:]}
+
+
+def digest(file):
+    return hashlib.sha256(Path(file).read_bytes()).hexdigest()
+
+
+def build_activities(sdk, tools, build, stage, steps):
+    source = ROOT / "native/activities"
+    binary = stage / "icb-activities"
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      "-fobjc-arc", "-fblocks", "-O2", "-Wall", "-Wextra", "-c",
+                      source / "ActivityBridge.m", "-o", stage / "ActivityBridge.o"]))
+    steps.append(run([tools["swiftc"], "-sdk", sdk, "-target", "arm64-apple-ios16.1",
+                      "-swift-version", "5", "-Onone", "-module-cache-path", build / "ModuleCache",
+                      "-import-objc-header", source / "ActivityBridge.h", source / "main.swift",
+                      stage / "ActivityBridge.o", stage / "libclang_rt.ios.a", "-o", binary]))
+    steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
+    binary.chmod(0o755)
+    return binary
+
+
+def build_settings(sdk, tools, build, stage, steps):
+    source = ROOT / "native/settings"
+    binary = stage / "icb-settings"
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      "-fobjc-arc", "-fblocks", "-O2", "-Wall", "-Wextra", "-c",
+                      source / "settings.m", "-o", stage / "settings.o"]))
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      stage / "settings.o", "-framework", "Foundation", "-framework", "AVFoundation",
+                      "-o", binary]))
+    steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
+    binary.chmod(0o755)
+    return binary
 
 
 def main():
@@ -45,30 +79,33 @@ def main():
     availability = Path(resource) / "lib/darwin/libclang_rt.ios.a"
     if not availability.is_file():
         raise RuntimeError("the installed clang iOS availability library is missing")
-    source = ROOT / "native/activities"
     build = ROOT / "build/native"
     build.mkdir(parents=True, exist_ok=True)
     stage = build / ("stage-%d-%d" % (int(time.time()), os.getpid()))
     stage.mkdir()
-    binary = stage / "icb-activities"
+    shutil.copyfile(availability, stage / "libclang_rt.ios.a")
     steps = []
-    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
-                      "-fobjc-arc", "-fblocks", "-O2", "-Wall", "-Wextra", "-c",
-                      source / "ActivityBridge.m", "-o", stage / "ActivityBridge.o"]))
-    steps.append(run([tools["swiftc"], "-sdk", sdk, "-target", "arm64-apple-ios16.1",
-                      "-swift-version", "5", "-Onone", "-module-cache-path", build / "ModuleCache",
-                      "-import-objc-header", source / "ActivityBridge.h", source / "main.swift",
-                      stage / "ActivityBridge.o", availability, "-o", binary]))
-    steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
-    binary.chmod(0o755)
-    digest = lambda file: hashlib.sha256(file.read_bytes()).hexdigest()
-    manifest = {"project": "ios-control-bridge", "version": "0.2.0", "architecture": "arm64",
-                "runtime_build_allowlist": ["20B101"], "built_at_unix": time.time(), "sdk": str(sdk),
-                "binary_sha256": digest(binary), "source_sha256": {
-                    file.name: digest(file) for file in sorted(source.iterdir()) if file.is_file()},
-                "steps": steps}
-    # Replace only the project helper after all compilation and signing steps pass.
-    os.replace(binary, build / "icb-activities")
+    activities_binary = build_activities(sdk, tools, build, stage, steps)
+    settings_binary = build_settings(sdk, tools, build, stage, steps)
+    source_files = sorted(file for file in (ROOT / "native").rglob("*") if file.is_file())
+    manifest = {
+        "project": "ios-control-bridge",
+        "version": VERSION,
+        "architecture": "arm64",
+        "runtime_build_allowlist": ["20B101"],
+        "built_at_unix": time.time(),
+        "sdk": str(sdk),
+        "binaries": {
+            "icb-activities": {"sha256": digest(activities_binary)},
+            "icb-settings": {"sha256": digest(settings_binary)},
+        },
+        "binary_sha256": digest(activities_binary),
+        "source_sha256": {str(file.relative_to(ROOT / "native")): digest(file) for file in source_files},
+        "steps": steps,
+    }
+    # Replace only the project helpers after all compilation and signing steps pass.
+    os.replace(activities_binary, build / "icb-activities")
+    os.replace(settings_binary, build / "icb-settings")
     (build / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf8")
     print(json.dumps(manifest))
 

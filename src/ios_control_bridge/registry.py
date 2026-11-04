@@ -1,9 +1,11 @@
 """Declare project scope separately from implemented and device-verified adapters."""
 from dataclasses import asdict, dataclass
 
-from .activities import get_activity, helper_path
+from .activities import get_activity, helper_path as activities_helper_path
 from .device import device_info, ios_version
 from .result import result
+from .settings import (SUPPORTED_SETTINGS, get_setting, helper_path as settings_helper_path,
+                       set_setting)
 
 
 @dataclass(frozen=True)
@@ -19,8 +21,8 @@ OPERATIONS = [
     Operation("device.info", "Read OS build, model, UID and bootstrap evidence", implemented=True, validation="device_verified"),
     Operation("activities.get", "Read a selected Live Activity's raw content and state", implemented=True, validation="device_verified"),
     Operation("activities.watch", "Monitor activity changes until an explicit stop condition"),
-    Operation("settings.get", "Read a supported setting or control button"),
-    Operation("settings.set", "Change a supported setting and verify its resulting value", mutates=True),
+    Operation("settings.get", "Read a supported setting (currently volume)", implemented=True, validation="device_verified"),
+    Operation("settings.set", "Change a supported setting and verify the readback (currently volume)", mutates=True, implemented=True, validation="device_verified"),
     Operation("alarms.list", "Read system alarms"),
     Operation("alarms.create", "Create an alarm with explicit time, timezone and repetition", mutates=True),
     Operation("alarms.update", "Modify one alarm by stable ID", mutates=True),
@@ -43,6 +45,18 @@ OPERATIONS = [
 ]
 BY_NAME = {operation.name: operation for operation in OPERATIONS}
 
+SETTINGS_BUILD = ("16.1.1", "20B101")
+
+
+def _settings_readiness(version):
+    if version is None:
+        return False, "not_ios"
+    if (version.get("ProductVersion"), version.get("ProductBuildVersion")) != SETTINGS_BUILD:
+        return False, "unverified_os_build"
+    if not settings_helper_path().is_file():
+        return False, "native_helper_missing"
+    return True, None
+
 
 def catalog(service=None):
     version = ios_version()
@@ -60,10 +74,15 @@ def catalog(service=None):
         elif operation.name == "activities.get":
             if (version.get("ProductVersion"), version.get("ProductBuildVersion")) != ("16.1.1", "20B101"):
                 ready, reason = False, "unverified_os_build"
-            elif not helper_path().is_file():
+            elif not activities_helper_path().is_file():
                 ready, reason = False, "native_helper_missing"
+        elif operation.name.startswith("settings."):
+            ready, reason = _settings_readiness(version)
         row["runtime"] = {"ready_to_query": ready, "reason": reason}
         if operation.name == "activities.get":
+            row["verified_builds"] = ["20B101"] if operation.validation == "device_verified" else []
+        if operation.name.startswith("settings."):
+            row["supported_settings"] = list(SUPPORTED_SETTINGS)
             row["verified_builds"] = ["20B101"] if operation.validation == "device_verified" else []
         rows.append(row)
     return rows
@@ -84,4 +103,8 @@ def invoke(operation, params, request_id=None):
         if params:
             return result(operation, "error", reason="unknown_parameters", request_id=request_id)
         return device_info(request_id)
+    if operation == "settings.get":
+        return get_setting(params, request_id)
+    if operation == "settings.set":
+        return set_setting(params, request_id)
     return result(operation, "unavailable", reason="adapter_missing", request_id=request_id)

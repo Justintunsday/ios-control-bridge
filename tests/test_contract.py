@@ -20,16 +20,25 @@ class CLIContractTests(unittest.TestCase):
         code, output = self.cli("capabilities")
         self.assertEqual(code, 0)
         rows = {row["name"]: row for row in output["data"]["operations"]}
-        self.assertTrue(rows["activities.get"]["implemented"])
-        for name in ("settings.set", "alarms.create", "reminders.create", "browser.search", "weather.current"):
+        for name in ("device.info", "activities.get", "settings.get", "settings.set"):
+            self.assertTrue(rows[name]["implemented"])
+        self.assertEqual(rows["settings.get"]["supported_settings"], ["volume"])
+        for name in ("alarms.create", "reminders.create", "browser.search", "weather.current"):
             self.assertFalse(rows[name]["implemented"])
             self.assertFalse(rows[name]["runtime"]["ready_to_query"])
 
     def test_planned_write_cannot_fall_back_to_a_command(self):
         with patch("subprocess.run", side_effect=AssertionError("unexpected device command")):
-            output = invoke("settings.set", {"name": "wifi", "value": False})
+            output = invoke("alarms.create", {"time": "07:00"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "not_implemented")
+        self.assertFalse(output["complete_for_scope"])
+
+    def test_unsupported_setting_does_not_report_success_or_run_helper(self):
+        with patch("subprocess.run", side_effect=AssertionError("unexpected device command")):
+            output = invoke("settings.set", {"setting": "wifi", "value": False})
+        self.assertEqual(output["status"], "unavailable")
+        self.assertEqual(output["reason"], "unsupported_setting")
         self.assertFalse(output["complete_for_scope"])
 
     def test_invalid_json_is_machine_readable_error(self):

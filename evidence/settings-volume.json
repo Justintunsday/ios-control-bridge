@@ -1,0 +1,88 @@
+{
+  "schema": "ios-control-bridge.evidence.settings-volume.v1",
+  "project_version": "0.3.0",
+  "captured_at": "2026-11-04T20:42:13+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless"
+  },
+  "implementation": {
+    "operation": "settings.get / settings.set",
+    "setting": "volume",
+    "category": "Audio/Video",
+    "unit": "fraction",
+    "range": {"min": 0.0, "max": 1.0},
+    "native_helper": "build/native/icb-settings",
+    "native_helper_sha256": "4bd0aca322fafff1b85dec008b9a75b69f0e903ca75a3784bf2663d8cd8c5524",
+    "source": "AVSystemController"
+  },
+  "acceptance": [
+    {
+      "operation": "settings.get",
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.0
+    },
+    {
+      "operation": "settings.set",
+      "status": "verified",
+      "exit_code": 0,
+      "before": 0.0,
+      "requested": 0.31,
+      "readback": 0.3100000023841858,
+      "delta": 2.384185793236071e-09,
+      "tolerance": 0.001
+    },
+    {
+      "operation": "settings.get",
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.3100000023841858
+    },
+    {
+      "operation": "settings.set",
+      "status": "verified",
+      "exit_code": 0,
+      "before": 0.3100000023841858,
+      "requested": 0.0,
+      "readback": 0.0,
+      "delta": 0.0,
+      "tolerance": 0.001,
+      "note": "restore of the original device volume"
+    },
+    {
+      "operation": "settings.get",
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.0
+    },
+    {
+      "operation": "settings.set",
+      "params": {"setting": "wifi", "value": true},
+      "status": "unavailable",
+      "exit_code": 3,
+      "reason": "unsupported_setting",
+      "note": "no helper process was started for an unsupported setting"
+    },
+    {
+      "operation": "settings.set",
+      "params": {"setting": "volume", "value": 2.0},
+      "status": "error",
+      "exit_code": 4,
+      "reason": "invalid_value"
+    }
+  ],
+  "restoration": {
+    "original_volume": 0.0,
+    "final_volume": 0.0,
+    "restored": true
+  },
+  "notes": [
+    "The test changed only the media volume and restored the original value in the same run.",
+    "No network switch, alarm, reminder or other setting was modified.",
+    "The helper also completed the same get/set/readback/restore sequence when executed as the mobile user."
+  ]
+}
