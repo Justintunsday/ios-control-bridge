@@ -1,0 +1,145 @@
+{
+  "schema": "ios-control-bridge.evidence.code-review.v1",
+  "review_date": "2026-11-05",
+  "reviewed_revision": "ec2a8882c143690c162b332ac943d3f2b4d7fad1",
+  "baseline_revision": "2b9e337",
+  "scope": "source_review_offline_reproduction_and_readonly_device_inventory",
+  "existing_unit_suite": {
+    "tests": 106,
+    "result": "PASS",
+    "host": "Windows"
+  },
+  "offline_problem_reproduction": {
+    "reviewed_revision": "ec2a8882c143690c162b332ac943d3f2b4d7fad1",
+    "scope": "offline mocks and temporary files; no device/network operations",
+    "observations": {
+      "live_activity_body_change": {
+        "input_content_values": [
+          10,
+          20
+        ],
+        "observed_changed": false,
+        "observed_stopped_early": false,
+        "expected_changed": true,
+        "reproduced": true
+      },
+      "search_permission_error": {
+        "status": "verified",
+        "complete_for_scope": true,
+        "count": 0,
+        "expected": "unavailable_or_partial",
+        "reproduced": true
+      },
+      "pending_write_after_timeout": {
+        "result": {
+          "status": "unavailable",
+          "detail": "bridge_timeout"
+        },
+        "command_still_present": true,
+        "reproduced": true
+      },
+      "command_tmp_follows_alias": {
+        "link_kind": "symlink",
+        "fixture_config_overwritten": true,
+        "scope": "owned temporary file only; no privileged file accessed",
+        "reproduced": true
+      },
+      "two_client_command_race": {
+        "results": {
+          "A": {
+            "status": "unavailable",
+            "detail": "bridge_command_write_failed"
+          },
+          "B": {
+            "status": "ok",
+            "value": 1,
+            "detail": "fixture"
+          }
+        },
+        "reproduced": true
+      },
+      "calendar_wrong_source_boundary": {
+        "requested_source": "00000000-0000-4000-8000-000000000002",
+        "returned_source": "00000000-0000-4000-8000-000000000003",
+        "status": "verified",
+        "scope": "Python boundary; native same-title selection reviewed statically",
+        "reproduced": true
+      },
+      "event_wrong_times_boundary": {
+        "returned_start": 0,
+        "returned_end": 1,
+        "status": "verified",
+        "expected": "readback_mismatch",
+        "reproduced": true
+      },
+      "recursive_match_no_location": {
+        "returned_fields": [
+          "mode",
+          "modified_at_unix",
+          "name",
+          "size",
+          "type"
+        ],
+        "expected": "path_or_relative_path",
+        "reproduced": true
+      }
+    },
+    "reproduced": 8,
+    "cases": 8
+  },
+  "device_inventory": {
+    "observed_at": "2026-11-04T22:57:19.537207+00:00",
+    "os_version": "16.1.1",
+    "os_build": "20B101",
+    "git_revision": null,
+    "safe_mode_marker": false,
+    "bridge_directory_mode": "0o777",
+    "pending_command_present": true,
+    "tools": {
+      "clang": true,
+      "swiftc": true,
+      "ldid": true,
+      "screenshot": false,
+      "idevicescreenshot": false,
+      "activator": false,
+      "zxtouch": false,
+      "tidevice": false,
+      "frida": false,
+      "appium": false
+    },
+    "source_sha256": {
+      "src/ios_control_bridge/activities.py": "511eb99e4279443e1a198b11e05df7435273fa132bda892ce81b22fdb1cb8f4b",
+      "src/ios_control_bridge/ellekit_bridge.py": "52ed0170d6b579be067a3f6a4a32b3c8c1a866d7e639be6080bd067d92f86b24",
+      "native/ellekit/SpringBridge.m": "4ef81beb762e96ef25f375869c783a973e02ae9f64ba50db9b63a1394a6f659e",
+      "native/calendar/CalendarBridge.m": "b9d544c64be0632b98d7426e93797f3a257bd3331f917109cc00f18013ae2f44",
+      "native/reminders/RemindersBridge.m": "bc35c6ce3bac3a570f946290db20d927112415f956e69eb8fbbaecb00a6de7f9",
+      "native/alarms/AlarmsBridge.m": "fd9858c88c1546869f72a1d440bf8456126acb3abfa37b384db0936a13c47ebe"
+    },
+    "bridge_binary_sha256": "fe725d5eee998927313c7fe6067a39c764f779a327ac7434b1f2b2bbc156543b",
+    "local_source_matches_after_lf_normalization": {
+      "src/ios_control_bridge/activities.py": true,
+      "src/ios_control_bridge/ellekit_bridge.py": true,
+      "native/ellekit/SpringBridge.m": true,
+      "native/calendar/CalendarBridge.m": true,
+      "native/reminders/RemindersBridge.m": true,
+      "native/alarms/AlarmsBridge.m": true
+    }
+  },
+  "findings": {
+    "P1": 3,
+    "P2": 7,
+    "fixed_in_this_review": 0
+  },
+  "ui_port": {
+    "stage": "research_and_skill_draft",
+    "device_backend_implemented_in_this_review": false,
+    "skill_format_validation": "PASS"
+  },
+  "notes": [
+    "Successful problem reproduction is not successful product acceptance.",
+    "Native duplicate-selection, delete-readback and event-truncation paths were reviewed statically.",
+    "No device UI input, settings changes, personal data writes, native deployment or respring in this review.",
+    "Source matches were checked after LF normalization; this is not proof that every deployed binary matches all reviewed source.",
+    "safe_mode_marker=false and a running process do not independently verify visible screen state."
+  ]
+}
