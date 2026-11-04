@@ -7,6 +7,22 @@ description: 通过 iOS Control Bridge 或已有终端通道查询和调整已�
 
 把自然语言请求映射为有依据的设备操作。默认用简体中文，先给结论，再给观测时间、来源、范围和未完成的部分。
 
+## 硬性规则：设备写入先走 iosctl
+
+- 所有设备写入（亮度、音量、闹钟、日历、提醒、设置）必须优先调用 `iosctl` 的固定操作；不要用 Python ctypes、`objc_msgSend` 或直接调用私有 C 函数代替适配器。
+- 已验证反例：`BKSDisplayBrightnessSet` 在本环境调用前后亮度不变（no-op），不能用于亮度控制；亮度/音量应使用 `icb-settings`。
+- 写入前用 `iosctl capabilities` 确认 `runtime.ready_to_query`；写入后用对应 `get`/`list` 读回。只有 `verified` 才能报告成功，`partial` / `unavailable` 必须如实说明。
+- 常用命令（在仓库目录执行）：
+
+```sh
+python3 -B bin/iosctl call settings.set --params '{"setting":"brightness","value":0.5}'
+python3 -B bin/iosctl call settings.get --params '{"setting":"brightness"}'
+python3 -B bin/iosctl call alarms.create --params '{"hour":8,"minute":0,"title":"闹钟"}'
+python3 -B bin/iosctl call reminders.create --params '{"list_id":"UUID","title":"提醒"}'
+```
+
+- 详细私有 API 路由、helper 路径和 entitlement 见 [private-apis.md](references/private-apis.md)；不要自己猜 selector。
+
 ## 能力与执行入口
 
 先判断命令运行在手机还是电脑。复用用户已授权的终端 / SSH 通道；不假定拥有手机执行权限，不把本机数据当手机状态。环境识别按 [terminal.md](references/terminal.md)，文件范围按 [filesystem.md](references/filesystem.md)。
