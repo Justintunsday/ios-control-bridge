@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 设备信息 | 系统版本、型号、UID、bootstrap 证据 | 已实现，迁移后真机验证见文档 |
 | 实时活动 | 跨 App 正文、Attributes、状态和变化监测 | 按 ID 读取已实现；持续监测待开发 |
-| 设置 / 控制中心 | Wi-Fi、蓝牙、蜂窝、飞行模式、亮度、音量、低电量、方向锁定、专注模式等的读取与调整 | 媒体音量读写已实现并真机验证；其他设置项逐项实现中 |
+| 设置 / 控制中心 | Wi-Fi、蓝牙、蜂窝、飞行模式、亮度、音量、低电量、方向锁定、专注模式等的读取与调整 | 媒体音量与屏幕亮度读写已实现并真机验证；其他设置项逐项实现中 |
 | 闹钟 | 系统闹钟列表、创建、改时、重复、启停和删除 | 待实现 |
 | 提醒事项 | 清单、查询、新建、编辑、完成和删除 | 待实现 |
 | 浏览器 / 网络查询 | 搜索结果、网页内容提取、打开指定页面 | 待实现 |
@@ -30,6 +30,7 @@ python3 bin/iosctl call device.info
 python3 bin/iosctl call activities.get --params '{"activity_id":"实际活动 UUID"}'
 python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 python3 bin/iosctl call settings.set --params '{"setting":"volume","value":0.4}'
+python3 bin/iosctl call settings.get --params '{"setting":"brightness"}'
 ```
 
 Windows 上可用 `py -3 bin/iosctl capabilities` 检查目录和接口；设备查询需要在真实 iOS 设备执行。在非 iOS 主机上返回 `unavailable/not_ios`。
@@ -51,7 +52,7 @@ python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 
 所有 `call` 返回 `ios-control-bridge.result.v1` JSON，包含请求 ID、操作、观测时间、来源和范围完整性：`verified` / `partial` / `unavailable` / `error`，退出码分别为 `0 / 2 / 3 / 4`。完整查询没有目标，与查询失败分别表示。
 
-`settings.get` / `settings.set` 已对媒体音量实现并完成真机读写回环，包含明确值校验和读回确认；其他设置项、闹钟和提醒事项仍返回 `unavailable/not_implemented`。写操作以用户明确指定的目标和值执行，修改后读回系统状态，不把发送成功等同于效果已验证。
+`settings.get` / `settings.set` 已对媒体音量和屏幕亮度实现并完成真机读写回环，包含明确值校验和读回确认；其他设置项、闹钟和提醒事项仍返回 `unavailable/not_implemented`。写操作以用户明确指定的目标和值执行，修改后读回系统状态，不把发送成功等同于效果已验证。
 
 - [服务范围与验收](docs/services.md)
 - [架构与接口契约](docs/architecture.md)

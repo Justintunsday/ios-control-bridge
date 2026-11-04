@@ -22,7 +22,7 @@ class CLIContractTests(unittest.TestCase):
         rows = {row["name"]: row for row in output["data"]["operations"]}
         for name in ("device.info", "activities.get", "settings.get", "settings.set"):
             self.assertTrue(rows[name]["implemented"])
-        self.assertEqual(rows["settings.get"]["supported_settings"], ["volume"])
+        self.assertEqual(rows["settings.get"]["supported_settings"], ["volume", "brightness"])
         for name in ("alarms.create", "reminders.create", "browser.search", "weather.current"):
             self.assertFalse(rows[name]["implemented"])
             self.assertFalse(rows[name]["runtime"]["ready_to_query"])

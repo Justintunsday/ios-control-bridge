@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 — Settings brightness adapter
+
+- Extend `native/settings` with the `brightness` setting through `BrightnessSystemClient` (`DisplayBrightness`).
+- Extend `settings.get` / `settings.set` to validate per-setting source and readback tolerance; `brightness` uses a 0.005 tolerance.
+- Device acceptance on iPhone SE 2 / iOS 16.1.1 / 20B101: read 0.8431398868560791, set 0.783139887, read back 0.7831399440765381, restore the original value; 34 Python tests pass.
+- The helper also completed the get/set/readback/restore sequence as the mobile user; volume remained unchanged.
+
 ## 0.3.0 — Settings volume adapter
 
 - Add `native/settings` Objective-C helper for the media volume through `AVSystemController`.

@@ -10,10 +10,16 @@ from .result import EXIT_CODES, result
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SCHEMA = "ios-control-bridge.settings.v1"
-NATIVE_SOURCE = "AVSystemController"
+SETTING_SOURCES = {
+    "volume": "AVSystemController",
+    "brightness": "BrightnessSystemClient",
+}
+SETTING_TOLERANCES = {
+    "volume": 0.001,
+    "brightness": 0.005,
+}
+SUPPORTED_SETTINGS = ("volume", "brightness")
 VERIFIED_BUILD = ("16.1.1", "20B101")
-SUPPORTED_SETTINGS = ("volume",)
-VOLUME_TOLERANCE = 0.001
 HELPER_TIMEOUT_SECONDS = 10
 
 
@@ -43,7 +49,7 @@ def _number(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
-def _invoke(arguments, operation, request_id):
+def _invoke(arguments, operation, request_id, expected_source):
     try:
         completed = subprocess.run([str(helper_path())] + arguments, capture_output=True,
                                    text=True, timeout=HELPER_TIMEOUT_SECONDS, check=False)
@@ -59,7 +65,7 @@ def _invoke(arguments, operation, request_id):
         return None, result(operation, "error", reason="invalid_native_json", request_id=request_id)
     if not isinstance(payload, dict) or payload.get("schema") != NATIVE_SCHEMA:
         return None, result(operation, "error", reason="native_schema_mismatch", request_id=request_id)
-    if payload.get("source") != NATIVE_SOURCE:
+    if payload.get("source") != expected_source:
         return None, result(operation, "error", reason="native_source_mismatch", request_id=request_id)
     if payload.get("setting") != arguments[1]:
         return None, result(operation, "error", reason="native_setting_mismatch", request_id=request_id)
@@ -83,7 +89,7 @@ def _get(params, request_id):
     gate = _runtime_gate(operation, request_id)
     if gate:
         return gate
-    payload, failure = _invoke(["get", setting], operation, request_id)
+    payload, failure = _invoke(["get", setting], operation, request_id, SETTING_SOURCES[setting])
     if failure:
         return failure
     if payload.get("status") != "verified":
@@ -92,7 +98,7 @@ def _get(params, request_id):
     value = payload.get("value")
     if not _number(value) or not 0.0 <= value <= 1.0:
         return result(operation, "error", reason="native_value_invalid", request_id=request_id)
-    return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
+    return result(operation, "verified", data=payload, source=SETTING_SOURCES[setting],
                   request_id=request_id, complete=True)
 
 
@@ -114,7 +120,8 @@ def _set(params, request_id):
     gate = _runtime_gate(operation, request_id)
     if gate:
         return gate
-    payload, failure = _invoke(["set", setting, format(float(value), ".9f")], operation, request_id)
+    payload, failure = _invoke(["set", setting, format(float(value), ".9f")], operation,
+                               request_id, SETTING_SOURCES[setting])
     if failure:
         return failure
     if payload.get("status") != "verified":
@@ -127,10 +134,10 @@ def _set(params, request_id):
         return result(operation, "error", reason="native_readback_invalid", request_id=request_id)
     if abs(requested - value) > 1e-6:
         return result(operation, "error", reason="native_requested_mismatch", request_id=request_id)
-    if abs(readback - requested) > VOLUME_TOLERANCE + 1e-9:
+    if abs(readback - requested) > SETTING_TOLERANCES[setting] + 1e-9:
         return result(operation, "partial", data=payload, reason="readback_mismatch",
                       request_id=request_id, complete=False)
-    return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
+    return result(operation, "verified", data=payload, source=SETTING_SOURCES[setting],
                   request_id=request_id, complete=True)
 
 

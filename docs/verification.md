@@ -37,3 +37,22 @@
 | Python 测试 | 31 项通过 |
 
 本次验证只改变媒体音量并在同一轮恢复；没有修改网络开关、闹钟、提醒事项或其他设置。
+
+## 屏幕亮度读写验证（0.4.0，2026-11-04）
+
+在同一设备上构建 `icb-settings`（`BrightnessSystemClient` / `DisplayBrightness`）并执行亮度读写回环。原始数值保留在 [settings-brightness.json](../evidence/settings-brightness.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| `settings.get {"setting":"brightness"}` | verified，读到 0.8431398868560791 |
+| `settings.set {"setting":"brightness","value":0.783139887}` | verified，before 0.8431398868560791，readback 0.7831399440765381 |
+| 再次 `settings.get` | verified，读到 0.7831399440765381 |
+| 恢复原值 `settings.set {"setting":"brightness","value":0.843139887}` | verified，readback 0.8431398868560791 |
+| 最终 `settings.get` | verified，读到 0.8431398868560791 |
+| 测试后 `settings.get {"setting":"volume"}` | verified，仍为 0.0 |
+| 不支持的 `wifi` | unavailable / unsupported_setting |
+| 越界值 2.0 | error / invalid_value |
+| 以 mobile 身份直接运行 helper | get / set / readback / restore 通过，原亮度恢复 |
+| Python 测试 | 34 项通过 |
+
+本次验证只改变屏幕亮度并在同一轮恢复；没有修改音量、网络开关、闹钟、提醒事项或其他设置。

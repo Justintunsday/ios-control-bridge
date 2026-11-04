@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from ios_control_bridge.settings import NATIVE_SCHEMA, NATIVE_SOURCE, get_setting, set_setting
+from ios_control_bridge.settings import (NATIVE_SCHEMA, SETTING_SOURCES, get_setting, set_setting)
 
 VERSION = {"ProductVersion": "16.1.1", "ProductBuildVersion": "20B101"}
 
@@ -25,37 +25,37 @@ class SettingsBoundaryTests(unittest.TestCase):
         self.addCleanup(self.helper.stop)
         self.addCleanup(self.temp.cleanup)
 
-    def payload(self, **changes):
+    def payload(self, setting="volume", **changes):
         value = {
             "schema": NATIVE_SCHEMA,
             "status": "verified",
-            "setting": "volume",
-            "category": "Audio/Video",
-            "source": NATIVE_SOURCE,
+            "setting": setting,
+            "category": "Audio/Video" if setting == "volume" else "display",
+            "source": SETTING_SOURCES[setting],
             "observed_at_unix": 1.0,
             "value": 0.5,
         }
         value.update(changes)
         return value
 
-    def set_payload(self, **changes):
-        value = self.payload(before=0.0, requested=0.5, readback=0.5, delta=0.0,
-                             tolerance=0.001, verified=True)
+    def set_payload(self, setting="volume", **changes):
+        value = self.payload(setting, before=0.0, requested=0.5, readback=0.5, delta=0.0,
+                             tolerance=0.001 if setting == "volume" else 0.005, verified=True)
         value.update(changes)
         return value
 
-    def query(self, helper_payload, exit_code=0, params=None):
+    def query(self, helper_payload, exit_code=0, params=None, setting="volume"):
         process = subprocess.CompletedProcess([], exit_code, json.dumps(helper_payload), "")
         with patch("ios_control_bridge.settings.subprocess.run", return_value=process) as call:
-            output = get_setting(params or {"setting": "volume"})
-        self.assertEqual(call.call_args.args[0][1:], ["get", "volume"])
+            output = get_setting(params or {"setting": setting})
+        self.assertEqual(call.call_args.args[0][1:], ["get", setting])
         return output
 
-    def set_value(self, helper_payload, exit_code=0, params=None):
+    def set_value(self, helper_payload, exit_code=0, params=None, setting="volume", value=0.5):
         process = subprocess.CompletedProcess([], exit_code, json.dumps(helper_payload), "")
         with patch("ios_control_bridge.settings.subprocess.run", return_value=process) as call:
-            output = set_setting(params or {"setting": "volume", "value": 0.5})
-        self.assertEqual(call.call_args.args[0][1:], ["set", "volume", "0.500000000"])
+            output = set_setting(params or {"setting": setting, "value": value})
+        self.assertEqual(call.call_args.args[0][1:], ["set", setting, format(float(value), ".9f")])
         return output
 
     def test_get_volume_returns_device_value(self):
@@ -63,15 +63,21 @@ class SettingsBoundaryTests(unittest.TestCase):
         self.assertEqual(output["status"], "verified")
         self.assertEqual(output["data"]["value"], 0.5)
         self.assertTrue(output["complete_for_scope"])
-        self.assertEqual(output["source"], NATIVE_SOURCE)
+        self.assertEqual(output["source"], "AVSystemController")
+
+    def test_get_brightness_returns_device_value(self):
+        output = self.query(self.payload("brightness", value=0.843139827), setting="brightness")
+        self.assertEqual(output["status"], "verified")
+        self.assertEqual(output["data"]["value"], 0.843139827)
+        self.assertEqual(output["source"], "BrightnessSystemClient")
 
     def test_unsupported_setting_does_not_start_helper(self):
         with patch("ios_control_bridge.settings.subprocess.run",
                    side_effect=AssertionError("unexpected helper")):
-            output = get_setting({"setting": "brightness"})
+            output = get_setting({"setting": "wifi"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "unsupported_setting")
-        self.assertEqual(output["data"]["supported_settings"], ["volume"])
+        self.assertEqual(output["data"]["supported_settings"], ["volume", "brightness"])
 
     def test_unknown_parameters_are_rejected_before_helper(self):
         with patch("ios_control_bridge.settings.subprocess.run",
@@ -94,6 +100,18 @@ class SettingsBoundaryTests(unittest.TestCase):
         self.assertTrue(output["complete_for_scope"])
         self.assertEqual(output["data"]["readback"], 0.5)
 
+    def test_set_brightness_readback_within_device_tolerance(self):
+        output = self.set_value(self.set_payload("brightness", readback=0.504, delta=0.004),
+                                setting="brightness")
+        self.assertEqual(output["status"], "verified")
+        self.assertTrue(output["complete_for_scope"])
+
+    def test_set_brightness_readback_outside_tolerance_is_partial(self):
+        output = self.set_value(self.set_payload("brightness", readback=0.52, delta=0.02),
+                                setting="brightness")
+        self.assertEqual(output["status"], "partial")
+        self.assertEqual(output["reason"], "readback_mismatch")
+
     def test_set_partial_readback_is_not_verified(self):
         output = self.set_value(self.set_payload(status="partial", readback=0.4, delta=-0.1,
                                                  verified=False, reason="readback_mismatch"), exit_code=2)
@@ -110,8 +128,8 @@ class SettingsBoundaryTests(unittest.TestCase):
         output = self.query(self.payload(), exit_code=3)
         self.assertEqual(output["reason"], "native_exit_status_mismatch")
 
-    def test_native_source_is_checked(self):
-        output = self.query(self.payload(source="unknown"))
+    def test_native_source_is_checked_per_setting(self):
+        output = self.query(self.payload("brightness", source="AVSystemController"), setting="brightness")
         self.assertEqual(output["reason"], "native_source_mismatch")
 
     def test_unverified_build_does_not_start_helper(self):
@@ -119,7 +137,7 @@ class SettingsBoundaryTests(unittest.TestCase):
                    return_value={"ProductVersion": "17.0", "ProductBuildVersion": "other"}), \
              patch("ios_control_bridge.settings.subprocess.run",
                    side_effect=AssertionError("unexpected helper")):
-            output = get_setting({"setting": "volume"})
+            output = get_setting({"setting": "brightness"})
         self.assertEqual(output["reason"], "unverified_os_build")
 
     def test_timeout_returns_unavailable(self):

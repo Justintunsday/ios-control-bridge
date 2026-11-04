@@ -10,11 +10,11 @@
 
 ## 已完成和未完成
 
-- 已实现并在迁移后的独立目录验证：`device.info`、`activities.get`、媒体音量的 `settings.get` / `settings.set`（0.3.0，含读回与恢复）。
+- 已实现并在迁移后的独立目录验证：`device.info`、`activities.get`、媒体音量与屏幕亮度的 `settings.get` / `settings.set`（0.4.0，含读回与恢复）。
 - 原生实时活动读取器支持当前 iOS 16.1.1 / 20B101 上的跨 App 原始正文、Attributes 和状态读取。单次查询不是常驻监听。
 - 统一入口为 `bin/iosctl`，Python 3.9+；接口结果为 JSON，协议在 `schemas/`。
-- 除媒体音量外的设置写入、闹钟、提醒事项、浏览器、天气、文件统一接口及持续监听仍未实现。注册表中的 planned 操作必须返回 `unavailable/not_implemented`。
-- 设置适配器当前只支持 `volume`（`Audio/Video` 类别，0.0-1.0）。原生 helper 位于 `native/settings/settings.m`，`tools/build_native.py` 一次构建 `build/native/icb-activities` 和 `build/native/icb-settings`。
+- 除媒体音量和屏幕亮度外的设置写入、闹钟、提醒事项、浏览器、天气、文件统一接口及持续监听仍未实现。注册表中的 planned 操作必须返回 `unavailable/not_implemented`。
+- 设置适配器当前支持 `volume`（`AVSystemController`，`Audio/Video` 类别）和 `brightness`（`BrightnessSystemClient`，`DisplayBrightness`），取值均为 0.0-1.0。原生 helper 位于 `native/settings/settings.m`，`tools/build_native.py` 一次构建 `build/native/icb-activities` 和 `build/native/icb-settings`。
 - 迁移验证为 18 项 Python 测试、15 项终端探测离线测试，以及 8 项手机检查。去除个人信息的证据在 [migration-summary.json](evidence/migration-summary.json)。
 
 不能将旧原生二进制的历史结果当成后续修改的验证，也不能将 planned 能力说成已完成。
@@ -42,7 +42,7 @@
 
 ## 下一块工作
 
-媒体音量已完成“读取 → 参数校验 → 按明确请求调整 → 读回 → 恢复测试值”的闭环（0.3.0）。下一项从亮度、低电量模式等候选开始，先用同样方式确认真实 getter / setter 和可恢复性，再接入固定参数 helper；网络开关、会响铃的闹钟、个人提醒事项不作为无关的探测副作用。
+媒体音量与屏幕亮度已完成“读取 → 参数校验 → 按明确请求调整 → 读回 → 恢复测试值”的闭环（0.4.0）。下一项从低电量模式等候选开始，先用同样方式确认真实 getter / setter 和可恢复性，再接入固定参数 helper；网络开关、会响铃的闹钟、个人提醒事项不作为无关的探测副作用。
 
 新增设置适配器优先放在 `native/settings`，通过固定参数或 JSON 与 CLI 连接。遵守 [AGENTS.md](AGENTS.md)；检查实际方法签名、线程要求、权限与系统版本，不按 root 身份推断接口可用。当前目标是系统真实功能，不能用普通通知代替系统时钟里的闹钟，也不改未知私人数据库。
 
@@ -56,6 +56,7 @@ python3 tools/build_native.py --sdk /path/to/installed/iPhoneOS.sdk
 python3 bin/iosctl call activities.get --params '{"activity_id":"实际活动 UUID"}'
 python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 python3 bin/iosctl call settings.set --params '{"setting":"volume","value":0.3}'
+python3 bin/iosctl call settings.get --params '{"setting":"brightness"}'
 ```
 
 现有手机源码目录为 `/var/jb/var/root/ios-control-bridge`。原生 helper 位于 `build/native/icb-activities` 和 `build/native/icb-settings`。Windows 开发目录为 `C:\ios-control-bridge`。上一次中断发生在最终文档 / Git 元数据同步前：手机上的编译源码和 CLI 已通过验证，但不要假定它已经是完整的远端 Git 克隆；接手时核对实际文件与提交。

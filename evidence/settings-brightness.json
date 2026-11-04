@@ -1,0 +1,104 @@
+{
+  "schema": "ios-control-bridge.evidence.settings-brightness.v1",
+  "project_version": "0.4.0",
+  "captured_at": "2026-11-04T20:46:20+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless"
+  },
+  "implementation": {
+    "operation": "settings.get / settings.set",
+    "setting": "brightness",
+    "unit": "fraction",
+    "range": {"min": 0.0, "max": 1.0},
+    "native_helper": "build/native/icb-settings",
+    "native_helper_sha256": "dfa4cf63e93c3d2656fe87afbeca991d0a0e6093eb4805a8f7462962814ec64f",
+    "source": "BrightnessSystemClient",
+    "property": "DisplayBrightness",
+    "tolerance": 0.005
+  },
+  "acceptance": [
+    {
+      "operation": "settings.get",
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.8431398868560791
+    },
+    {
+      "operation": "settings.set",
+      "status": "verified",
+      "exit_code": 0,
+      "before": 0.8431398868560791,
+      "requested": 0.783139887,
+      "readback": 0.7831399440765381,
+      "delta": 5.7076538122213914e-08,
+      "tolerance": 0.005
+    },
+    {
+      "operation": "settings.get",
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.7831399440765381
+    },
+    {
+      "operation": "settings.set",
+      "status": "verified",
+      "exit_code": 0,
+      "before": 0.7831399440765381,
+      "requested": 0.843139887,
+      "readback": 0.8431398868560791,
+      "delta": -1.4396827831240686e-10,
+      "tolerance": 0.005,
+      "note": "restore of the original display brightness"
+    },
+    {
+      "operation": "settings.get",
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.8431398868560791
+    },
+    {
+      "operation": "settings.get",
+      "params": {"setting": "volume"},
+      "status": "verified",
+      "exit_code": 0,
+      "value": 0.0,
+      "note": "volume unchanged by the brightness test"
+    },
+    {
+      "operation": "settings.set",
+      "params": {"setting": "wifi", "value": true},
+      "status": "unavailable",
+      "exit_code": 3,
+      "reason": "unsupported_setting"
+    },
+    {
+      "operation": "settings.set",
+      "params": {"setting": "brightness", "value": 2.0},
+      "status": "error",
+      "exit_code": 4,
+      "reason": "invalid_value"
+    }
+  ],
+  "mobile_helper_acceptance": {
+    "identity": "mobile (uid 501)",
+    "original": 0.8431398868560791,
+    "requested": 0.80314,
+    "readback": 0.80314004421234131,
+    "restored": 0.8431398868560791,
+    "volume_after": 0
+  },
+  "restoration": {
+    "original_brightness": 0.8431398868560791,
+    "final_brightness": 0.8431398868560791,
+    "restored": true
+  },
+  "notes": [
+    "The test changed only the display brightness and restored the original value in the same run.",
+    "No network switch, alarm, reminder or other setting was modified.",
+    "The helper also completed the same get/set/readback/restore sequence when executed as the mobile user."
+  ]
+}

@@ -12,7 +12,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 
 def run(args, seconds=120):
@@ -56,8 +56,8 @@ def build_settings(sdk, tools, build, stage, steps):
                       "-fobjc-arc", "-fblocks", "-O2", "-Wall", "-Wextra", "-c",
                       source / "settings.m", "-o", stage / "settings.o"]))
     steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
-                      stage / "settings.o", "-framework", "Foundation", "-framework", "AVFoundation",
-                      "-o", binary]))
+                      stage / "settings.o", "-framework", "Foundation", "-framework", "UIKit",
+                      "-framework", "AVFoundation", "-o", binary]))
     steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
     binary.chmod(0o755)
     return binary
