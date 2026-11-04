@@ -54,5 +54,6 @@ python3 bin/iosctl call activities.get \
 - [架构与接口契约](docs/architecture.md)
 - [开发路线](docs/roadmap.md)
 - [实时活动与迁移验证](docs/live-activities.md)
+- [接手开发说明与语言建议](HANDOFF.md)
 
 本机测试：`python3 -m unittest discover -s tests -v`。真机结果只证明记录中的设备、系统 build 和操作；不将未来服务或其他 iOS 版本列为已验证。
