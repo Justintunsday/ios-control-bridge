@@ -20,7 +20,8 @@ class DeviceIdentityTests(unittest.TestCase):
     def test_missing_model_is_partial_and_explicit(self):
         with patch("ios_control_bridge.device.ios_version", return_value={"ProductName": "iPhone OS", "ProductVersion": "16.1.1"}), \
              patch("ios_control_bridge.device.os.geteuid", create=True, return_value=0), \
-             patch("ios_control_bridge.device.shutil.which", return_value=None):
+             patch("ios_control_bridge.device.shutil.which", return_value=None), \
+             patch("ios_control_bridge.device.os.path.exists", return_value=False):
             output = device_info()
         self.assertEqual(output["status"], "partial")
         self.assertIsNone(output["data"]["model"])
