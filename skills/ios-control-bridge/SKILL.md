@@ -1,6 +1,6 @@
 ---
 name: ios-control-bridge
-description: 通过 iOS Control Bridge 或已有终端通道查询和调整已越狱 iPhone 的系统服务、文件与实时活动。用于明确针对已连接设备的设置、闹钟、提醒事项、浏览器和天气能力开发或调用；普通网页天气问答和通用 iOS UI 开发不适用。
+description: 通过 iOS Control Bridge 或已有终端通道查询和调整已越狱 iPhone 的系统服务、文件与实时活动。用于明确针对已连接设备的设置、闹钟、提醒事项、浏览器和天气能力开发或调用；普通网页天气问答和通用 iOS UI 开发不适用。也包含 iOS Control Bridge 已实现的私有 API 接口与 iosctl 调用说明。
 ---
 
 # iOS Control Bridge
@@ -32,6 +32,10 @@ Live Activities 专指锁屏 / 灵动岛活动，按 [live-activities.md](refere
 按活动 ID 查询并保留原始状态与正文编码。系统自己的内容数据与公开 App 对照文件分开；测试证据不是实时数据来源。单次查询不代表持续监听；持续关注需实际运行器、停止条件、断连处理和通知策略。
 
 语音转写作为普通用户输入，按 [voice-intents.md](references/voice-intents.md) 消除关键歧义。本技能不自行提供语音识别、朗读或后台服务。
+
+## 私有 API 接口
+
+已实现的私有 API 适配器（MobileTimer 闹钟、EventKit 日历、ReminderKit 提醒、EllekKit/SpringBoard 设置、MobileTimer/EventKit/ReminderKit 固定 helper 路径与 entitlement）见 [private-apis.md](references/private-apis.md)。优先调用 `iosctl` 固定操作，不直接写 raw private selector；每次写入读回，测试数据必须清理。
 
 ## OpenCode / DeepSeek API 失效
 
