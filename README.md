@@ -74,3 +74,13 @@ python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 - [接手开发说明与语言建议](HANDOFF.md)
 
 本机测试：`python3 -m unittest discover -s tests -v`。真机结果只证明记录中的设备、系统 build 和操作；不将未来服务或其他 iOS 版本列为已验证。
+
+## 团队与维护
+
+- 项目名称：iOS Control Bridge
+- 仓库：https://github.com/Justintunsday/ios-control-bridge
+- 分支：main
+- 维护：iOS Control Bridge contributors
+- OpenCode skill/插件名：`ios-control-bridge`
+- Skill 说明：`skills/ios-control-bridge/README.md`
+- 已验证设备：iPhone12,8 / iOS 16.1.1 / 20B101 / Dopamine rootless
