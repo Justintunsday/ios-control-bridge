@@ -32,6 +32,10 @@
 
 `alarms.*` 使用独立 helper `native/alarms/AlarmsBridge.m`，通过 dlopen 加载私有 `MobileTimer.framework` 的 `MTAlarmManager`，并以 `com.apple.private.mobiletimerd` entitlement 签名。helper 只接受固定命令（list/create/update/set_enabled/delete），返回真实闹钟 ID、时间、标签和启停状态，并在写后读回。
 
+## EventKit 日历 helper
+
+`calendar.*` 使用独立 helper `native/calendar/CalendarBridge.m`，以 EventKit + `com.apple.private.tcc.allow`（Calendar/Reminders/AddressBook）和 `com.apple.private.calendar.calaccessd` entitlement 签名。该 helper 必须在 `/var/jb/usr/local/bin` 路径运行；同一二进制放在 `/var/jb/var/root/...` 会被 TCC/EventKit 拒绝。支持日历列举、在显式来源创建日历、按 ID 删除，并在写后读回。
+
 ## 可选 ElleKit SpringBoard bridge
 
 `low_power` 与 `orientation_lock` 依赖 SpringBoard 进程内的私有类（`_PMLowPowerMode`、`SBOrientationLockManager`），CLI 进程无法直接访问。可选 tweak `native/ellekit/SpringBridge.m` 通过 ElleKit 注入 SpringBoard，轮询固定命令文件并把命令派发到主队列执行；只接受固定动作（低电量 get/set、方向锁定 get/set、Wi-Fi/飞行模式/蓝牙只读），没有通用 selector 执行入口。Wi-Fi/飞行模式/蓝牙写入在 CLI 层明确拒绝为 `read_only_setting`。bridge 的运行条件、安装方式和安全边界见 [ELLEKIT_BRIDGE.md](ELLEKIT_BRIDGE.md)。

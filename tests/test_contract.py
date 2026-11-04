@@ -25,7 +25,8 @@ class CLIContractTests(unittest.TestCase):
         self.assertEqual(rows["settings.get"]["supported_settings"],
                          ["volume", "brightness", "low_power", "orientation_lock",
                           "wifi", "airplane", "bluetooth"])
-        self.assertTrue(rows["alarms.list"]["implemented"])
+        for name in ("alarms.list", "calendar.list", "calendar.create"):
+            self.assertTrue(rows[name]["implemented"])
         for name in ("reminders.create", "reminders.complete"):
             self.assertFalse(rows[name]["implemented"])
             self.assertFalse(rows[name]["runtime"]["ready_to_query"])

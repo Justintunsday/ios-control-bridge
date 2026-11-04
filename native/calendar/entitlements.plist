@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>platform-application</key><true/>
+<key>com.apple.private.security.no-sandbox</key><true/>
+<key>com.apple.private.tcc.allow</key>
+<array>
+<string>kTCCServiceReminders</string>
+<string>kTCCServiceCalendar</string>
+<string>kTCCServiceAddressBook</string>
+</array>
+<key>com.apple.private.tcc.allow.overridable</key>
+<array>
+<string>kTCCServiceReminders</string>
+<string>kTCCServiceCalendar</string>
+<string>kTCCServiceAddressBook</string>
+</array>
+<key>com.apple.private.remindd</key><true/>
+<key>com.apple.private.calendar.calaccessd</key><true/>
+<key>com.apple.private.calendar.syncclient</key><true/>
+<key>com.apple.security.exception.mach-lookup.global-name</key>
+<array>
+<string>com.apple.remindd</string>
+<string>com.apple.calaccessd</string>
+<string>com.apple.chronoservices</string>
+</array>
+</dict></plist>

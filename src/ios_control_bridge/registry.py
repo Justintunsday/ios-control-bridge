@@ -1,7 +1,7 @@
 """Declare project scope separately from implemented and device-verified adapters."""
 from dataclasses import asdict, dataclass
 
-from . import alarms, browser, files, weather
+from . import alarms, browser, calendar, files, weather
 from .activities import (get_activity, helper_path as activities_helper_path,
                          watch_activity)
 from .browser import open_helper_path as browser_open_helper_path
@@ -31,6 +31,9 @@ OPERATIONS = [
     Operation("alarms.update", "Modify one alarm by stable ID", mutates=True, implemented=True, validation="device_verified"),
     Operation("alarms.set_enabled", "Enable or disable one alarm", mutates=True, implemented=True, validation="device_verified"),
     Operation("alarms.delete", "Delete one identified alarm", mutates=True, implemented=True, validation="device_verified"),
+    Operation("calendar.list", "List EventKit calendars and their sources", implemented=True, validation="device_verified"),
+    Operation("calendar.create", "Create an EventKit calendar in an explicit source", mutates=True, implemented=True, validation="device_verified"),
+    Operation("calendar.delete", "Delete one identified calendar", mutates=True, implemented=True, validation="device_verified"),
     Operation("reminders.lists", "Read reminder lists"),
     Operation("reminders.list", "Read reminders within a selected list and time range"),
     Operation("reminders.create", "Create a reminder with an explicit destination list", mutates=True),
@@ -92,6 +95,9 @@ def catalog(service=None):
         elif operation.name.startswith("alarms."):
             if not alarms.helper_path().is_file():
                 ready, reason = False, "native_helper_missing"
+        elif operation.name.startswith("calendar."):
+            if not calendar.helper_path().is_file():
+                ready, reason = False, "native_helper_missing"
         row["runtime"] = {"ready_to_query": ready, "reason": reason}
         if operation.name.startswith("settings."):
             row["supported_settings"] = list(SUPPORTED_SETTINGS)
@@ -143,6 +149,12 @@ def invoke(operation, params, request_id=None):
         return alarms.set_enabled(params, request_id)
     if operation == "alarms.delete":
         return alarms.delete_alarm(params, request_id)
+    if operation == "calendar.list":
+        return calendar.list_calendars(params, request_id)
+    if operation == "calendar.create":
+        return calendar.create_calendar(params, request_id)
+    if operation == "calendar.delete":
+        return calendar.delete_calendar(params, request_id)
     if operation == "files.list":
         return files.list_files(params, request_id)
     if operation == "files.search":

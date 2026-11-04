@@ -1,0 +1,51 @@
+{
+  "schema": "ios-control-bridge.evidence.calendar.v1",
+  "project_version": "0.9.0",
+  "captured_at": "2026-11-04T21:48:00+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless"
+  },
+  "component": {
+    "source": "native/calendar/CalendarBridge.m",
+    "framework": "EventKit.framework",
+    "helper_build_path": "build/native/icb-calendar",
+    "helper_installed_path": "/var/jb/usr/local/bin/icb-calendar",
+    "helper_sha256": "cd38d93665691f79fa19d1b2473d85fc770e4594afa2ca728ad3e5a41bdf642e",
+    "entitlements": [
+      "platform-application",
+      "com.apple.private.security.no-sandbox",
+      "com.apple.private.tcc.allow [kTCCServiceCalendar, kTCCServiceReminders, kTCCServiceAddressBook]",
+      "com.apple.private.tcc.allow.overridable",
+      "com.apple.private.calendar.calaccessd",
+      "com.apple.private.calendar.syncclient",
+      "com.apple.security.exception.mach-lookup.global-name"
+    ],
+    "path_constraint": "TCC/EventKit denies the same helper when run from /var/jb/var/root/...; installing it under /var/jb/usr/local/bin is required and was verified."
+  },
+  "eventkit_authorization": {
+    "event": 3,
+    "reminder": 3
+  },
+  "acceptance": [
+    {"operation": "calendar.list", "status": "verified", "count": 9, "sources": 3},
+    {"operation": "calendar.create", "status": "verified", "title": "ICB Calendar Acceptance",
+     "source": "iCloud", "calendar_id": "7ED79AB8-803D-48C2-9C09-9F5893A3E9DB"},
+    {"operation": "calendar.list after create", "status": "verified", "count": 10, "found": true},
+    {"operation": "calendar.delete", "status": "verified"},
+    {"operation": "calendar.list after delete", "status": "verified", "count": 9, "found": false}
+  ],
+  "reminders": {
+    "status": "not_implemented",
+    "reason": "EventKit reminder authorization is authorized but no reminder account/default list exists; creating a reminder calendar through iCloud/Subscribed/Other sources reports success but does not persist (lists remain 0).",
+    "observed": {"reminder_lists": 0, "default_calendar_for_new_reminders": ""}
+  },
+  "tests": {"python_unit": 92, "local": "PASS", "remote": 92},
+  "notes": [
+    "The test calendar was created on the iCloud source and deleted in the same run; final calendar count returned to 9.",
+    "No event or reminder content was created."
+  ]
+}

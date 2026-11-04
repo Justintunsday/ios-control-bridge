@@ -154,3 +154,12 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 - 真机完成创建 23:57 → 列表 → 改为 23:56/新标签 → 禁用/启用 → 删除 → 列表确认不存在；探测产生的两个测试闹钟均已清理，最终无测试闹钟。
 - 84 项 Python 测试通过；`tools/build_native.py` 现在构建并签名四个 helper。
 - 证据：`evidence/alarms.json`。仍未实现：提醒事项、日历、Wi-Fi/蓝牙/飞行模式/蜂窝/专注模式可写控制、常驻监听。
+
+## 11. 0.9.0 补充：日历（私有 EventKit）
+
+- 新增 helper `native/calendar/CalendarBridge.m`，使用 EventKit + TCC 私有 entitlement 实现 `calendar.list` / `calendar.create` / `calendar.delete`。
+- 日历创建支持显式来源；真机在 iCloud 来源创建 “ICB Calendar Acceptance”，读回后删除，最终日历数量恢复到 9。
+- 关键限制：helper 必须位于 `/var/jb/usr/local/bin/icb-calendar`；同一二进制在 `/var/jb/var/root/...` 会被 TCC/EventKit 拒绝。
+- 提醒事项仍不可用：EventKit 授权为 authorized，但设备无提醒账户/默认清单，向各来源保存清单返回成功但不持久化。
+- 92 项 Python 测试通过；native build 现在生成 5 个 helper。
+- 证据：`evidence/calendar.json`。

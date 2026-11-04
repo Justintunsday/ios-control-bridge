@@ -7,7 +7,8 @@
 | device | `info` | 当前 OS / build、型号、UID 与 bootstrap 证据来自设备 |
 | settings | `get`, `set` | 每个设置项分别声明支持版本、值类型和权限；修改后读回；不支持的项目明确报告。媒体音量（`volume`）、屏幕亮度（`brightness`）、低电量模式（`low_power`，布尔）与方向锁定（`orientation_lock`，布尔）已实现并真机验证；Wi-Fi/飞行模式/蓝牙（`wifi`/`airplane`/`bluetooth`）为只读；后五项通过可选 ElleKit SpringBoard bridge |
 | alarms | `list`, `create`, `update`, `set_enabled`, `delete` | 返回系统时钟真实闹钟的稳定 ID；时间、标签、启停可读回；测试样本已清理。已实现并真机验证，使用私有 `MobileTimer.framework` 与 `com.apple.private.mobiletimerd` entitlement |
-| reminders | `lists`, `list`, `create`, `update`, `complete`, `delete` | 基于明确清单和条目 ID 读取、写入并读回，保留授权状态和分页 / 范围限制 |
+| reminders | `lists`, `list`, `create`, `update`, `complete`, `delete` | 基于明确清单和条目 ID 读取、写入并读回，保留授权状态和分页 / 范围限制。当前未实现：EventKit 授权可用，但设备无提醒账户/默认清单，创建不持久 |
+| calendar | `list`, `create`, `delete` | 列出日历及来源；在显式来源创建日历并读回；按准确 ID 删除。已实现并真机验证 |
 | browser | `search`, `read`, `open` | 搜索有真实结果及 URL（DuckDuckGo HTML，空结果时回退 Bing HTML）；读取有最终 URL、提取时间和截断标志；打开页面通过 LaunchServices 执行并报告实际层级 |
 | weather | `current`, `forecast` | 输入明确位置与单位；输出供应方（当前为 Open-Meteo）、观测 / 预报时间与时区；网络失败不回填旧数据冒充当前 |
 | activities | `get`, `watch` | 正文读取来源可核实；`watch` 当前为有界前台轮询（显式时长、间隔、超时与可选提前停止），常驻运行器和通知仍待开发 |
@@ -15,7 +16,7 @@
 
 ## 设置和功能按钮
 
-媒体音量、屏幕亮度、低电量模式与方向锁定已实现并完成 getter、值校验、setter、读回和恢复验证。Wi-Fi、飞行模式与蓝牙提供只读状态；写入会被拒绝为 `unavailable/read_only_setting`，因为当前未找到可靠的免断网/免额外授权写入路径。蜂窝网络与专注模式仍未接入。按设置逐项完成同样的读写回环和兼容性验证；不使用一条通用任意 shell 命令替代服务接口。
+媒体音量、屏幕亮度、低电量模式与方向锁定已实现并完成 getter、值校验、setter、读回和恢复验证。Wi-Fi、飞行模式与蓝牙提供只读状态；写入会被拒绝为 `unavailable/read_only_setting`，因为当前未找到可靠的免断网/免额外授权写入路径。蜂窝网络与专注模式仍未接入。日历列表/新建/删除已通过 EventKit 实现；提醒事项因设备没有提醒账户/默认清单而未实现。按设置逐项完成同样的读写回环和兼容性验证；不使用一条通用任意 shell 命令替代服务接口。
 
 ## 时间与个人事项
 

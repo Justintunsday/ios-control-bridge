@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0 — EventKit calendar support
+
+- Add `native/calendar/CalendarBridge.m` using EventKit with CalendarDaemon TCC entitlements.
+- Implement `calendar.list`, `calendar.create` and `calendar.delete` with source selection and readback.
+- Device acceptance on iPhone SE 2 / iOS 16.1.1 / 20B101: list 9 calendars, create one on iCloud, verify by list, delete, final count 9.
+- Document the TCC/EventKit path constraint (`/var/jb/usr/local/bin` required) and the reminder-account blocker.
+- 92 Python tests pass; extend native build to five helpers.
+
 ## 0.8.0 — System Clock alarms through MobileTimer
 
 - Add native helper `native/alarms/AlarmsBridge.m` using the private MobileTimer `MTAlarmManager`.

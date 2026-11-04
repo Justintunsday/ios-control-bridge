@@ -135,3 +135,21 @@ ElleKit bridge 增加 `get_bluetooth`，并把 Wi-Fi、飞行模式、蓝牙作�
 | Python 测试 | 84 项通过（设备端 82 项旧同步集；新测试已加入） |
 
 测试闹钟时间为 23:57 且立即删除，没有等待触发；没有修改用户已有闹钟。
+
+## 日历验证（0.9.0，2026-11-04）
+
+新增 `native/calendar/CalendarBridge.m`，使用私有 EventKit + `com.apple.private.tcc.allow`（Calendar/Reminders/AddressBook）和 `com.apple.private.calendar.calaccessd` entitlement。完整摘要见 [calendar.json](../evidence/calendar.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| EventKit authorization | event/reminder 均为 3（authorized） |
+| `calendar.list` | verified，9 个日历，3 个来源 |
+| `calendar.create {"title":"ICB Calendar Acceptance"}` | verified，创建于 iCloud 来源，返回真实 calendar ID |
+| 创建后 `calendar.list` | verified，10 个日历，包含测试日历 |
+| `calendar.delete` | verified |
+| 删除后 `calendar.list` | verified，9 个日历，测试日历不存在 |
+| Python 测试 | 92 项通过 |
+
+TCC/EventKit 对路径敏感：同一 helper 位于 `/var/jb/usr/local/bin/icb-calendar` 时可以访问，位于 `/var/jb/var/root/...` 时返回 `calendar_access_denied`。部署时需要复制到 `/var/jb/usr/local/bin/icb-calendar`。
+
+提醒事项仍不可用：authorization 为 authorized，但设备没有提醒账户/默认清单；在 iCloud、Subscribed、Other 来源创建提醒清单都返回成功但不会持久化（提醒清单数量始终为 0）。

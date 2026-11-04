@@ -12,7 +12,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.8.0"
+VERSION = "0.9.0"
 
 
 def run(args, seconds=120):
@@ -58,6 +58,20 @@ def build_browser(sdk, tools, build, stage, steps):
     steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
                       stage / "open_url.o", "-framework", "Foundation", "-framework", "UIKit",
                       "-o", binary]))
+    steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
+    binary.chmod(0o755)
+    return binary
+
+
+def build_calendar(sdk, tools, build, stage, steps):
+    source = ROOT / "native/calendar"
+    binary = stage / "icb-calendar"
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      "-fno-objc-arc", "-O2", "-Wall", "-Wextra", "-c",
+                      source / "CalendarBridge.m", "-o", stage / "CalendarBridge.o"]))
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      stage / "CalendarBridge.o", "-framework", "Foundation",
+                      "-framework", "EventKit", "-o", binary]))
     steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
     binary.chmod(0o755)
     return binary
@@ -116,6 +130,7 @@ def main():
     settings_binary = build_settings(sdk, tools, build, stage, steps)
     browser_binary = build_browser(sdk, tools, build, stage, steps)
     alarms_binary = build_alarms(sdk, tools, build, stage, steps)
+    calendar_binary = build_calendar(sdk, tools, build, stage, steps)
     source_files = sorted(file for file in (ROOT / "native").rglob("*") if file.is_file())
     manifest = {
         "project": "ios-control-bridge",
@@ -129,6 +144,7 @@ def main():
             "icb-settings": {"sha256": digest(settings_binary)},
             "icb-open-url": {"sha256": digest(browser_binary)},
             "icb-alarms": {"sha256": digest(alarms_binary)},
+            "icb-calendar": {"sha256": digest(calendar_binary)},
         },
         "binary_sha256": digest(activities_binary),
         "source_sha256": {str(file.relative_to(ROOT / "native")): digest(file) for file in source_files},
@@ -139,6 +155,7 @@ def main():
     os.replace(settings_binary, build / "icb-settings")
     os.replace(browser_binary, build / "icb-open-url")
     os.replace(alarms_binary, build / "icb-alarms")
+    os.replace(calendar_binary, build / "icb-calendar")
     (build / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf8")
     print(json.dumps(manifest))
 
