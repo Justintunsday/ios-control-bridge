@@ -24,6 +24,10 @@
 
 读取器的原生结果保存在 `data`，保留活动 ID、原始状态、正文编码、系统服务和采样时间。Python 边界校验 JSON schema 标识、来源、目标 ID、退出码与状态的一致性，不从历史文件补正文。
 
+## 网络与本地数据适配器
+
+`browser.*` 由 Python HTTP 客户端和 HTML 解析器实现；搜索 provider 为 DuckDuckGo HTML，空结果时回退 Bing HTML；`browser.open` 通过固定原生 helper `icb-open-url` 调用 `LSApplicationWorkspace`。`weather.*` 使用 Open-Meteo HTTP API，保留 provider、时区、单位与 attribution。`files.*` 是纯 Python 有界文件系统接口，只处理显式绝对路径。所有 adapters 都返回统一 result JSON 和退出码。
+
 ## 写操作的实现约束
 
 设置写入已对媒体音量和屏幕亮度实现：固定参数和 0.0-1.0 值范围、明确的设置名、有限超时及修改后的读取验证。原生 helper 返回 before / requested / readback，Python 边界再次校验读回差值；记录读回值和未完成的验证，区分“请求已受理”和“结果已核实”。其他写服务仍处于计划阶段。沿用用户已有授权；不要求用户重复确认已经明确交代的操作。

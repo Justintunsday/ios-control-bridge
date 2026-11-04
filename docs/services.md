@@ -8,10 +8,10 @@
 | settings | `get`, `set` | 每个设置项分别声明支持版本、值类型和权限；修改后读回；不支持的项目明确报告。媒体音量（`volume`，取值 0.0-1.0，`Audio/Video` 类别）与屏幕亮度（`brightness`，取值 0.0-1.0，DisplayBrightness）已实现并真机验证 |
 | alarms | `list`, `create`, `update`, `set_enabled`, `delete` | 返回系统时钟真实闹钟的稳定 ID；时间、时区、重复和启停可读回；测试样本可清理 |
 | reminders | `lists`, `list`, `create`, `update`, `complete`, `delete` | 基于明确清单和条目 ID 读取、写入并读回，保留授权状态和分页 / 范围限制 |
-| browser | `search`, `read`, `open` | 搜索有真实结果及 URL；读取有最终 URL、提取时间和截断标志；打开页面报告实际执行层级 |
-| weather | `current`, `forecast` | 输入明确位置与单位；输出供应方、观测 / 预报时间与时区；网络失败不回填旧数据冒充当前 |
-| activities | `get`, `watch` | 正文读取来源可核实；监测另有运行器、停止条件、断连状态和通知策略 |
-| files | `list`, `search`, `read` | 目录明确、结果有界，权限失败与完整空结果区分；正文只读取指定文件 |
+| browser | `search`, `read`, `open` | 搜索有真实结果及 URL（DuckDuckGo HTML，空结果时回退 Bing HTML）；读取有最终 URL、提取时间和截断标志；打开页面通过 LaunchServices 执行并报告实际层级 |
+| weather | `current`, `forecast` | 输入明确位置与单位；输出供应方（当前为 Open-Meteo）、观测 / 预报时间与时区；网络失败不回填旧数据冒充当前 |
+| activities | `get`, `watch` | 正文读取来源可核实；`watch` 当前为有界前台轮询（显式时长、间隔、超时与可选提前停止），常驻运行器和通知仍待开发 |
+| files | `list`, `search`, `read` | 目录明确、结果有界，权限失败与完整空结果区分；正文只读取指定文件。已实现并真机验证 |
 
 ## 设置和功能按钮
 
@@ -27,6 +27,8 @@
 
 ## 网络和天气
 
-浏览器搜索、网页正文和页面打开是三个操作，分别报告来源与结果。网页内容作为数据交给上层客户端，不作为设备控制指令。
+浏览器搜索、网页正文和页面打开是三个操作，分别报告来源与结果。搜索先使用 DuckDuckGo HTML，空结果时回退 Bing HTML；页面打开通过 `LSApplicationWorkspace` 执行，属于真实前台 UI 操作。网页内容作为数据交给上层客户端，不作为设备控制指令。
 
-天气以可替换的数据源适配器实现。若选 [WeatherKit REST API](https://developer.apple.com/documentation/weatherkitrestapi/request-authentication-for-weatherkit-rest-api)，需要相应开发者身份和签名令牌；没有配置时返回明确的缺口。其他供应方同样须保留来源、时间、单位与要求的署名。当前尚未选定或接入天气供应方。
+天气以可替换的数据源适配器实现。当前接入 Open-Meteo HTTP API（无 key），输出供应方、时区、单位与 attribution；网络失败返回明确错误，不回填旧数据。未来可替换为含签名令牌的 WeatherKit 等其他供应方。
+
+文件接口只处理显式绝对路径，所有结果有界；不提供通配符递归或任意目录遍历。

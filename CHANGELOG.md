@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 — Files, browser, weather and activity watching
+
+- Add bounded `files.list` / `files.search` / `files.read` adapters with explicit paths and truncation flags.
+- Add `browser.search` (DuckDuckGo HTML with Bing fallback), `browser.read` and `browser.open` through a new `icb-open-url` helper.
+- Add `weather.current` / `weather.forecast` through Open-Meteo with provider attribution and explicit units/timezone.
+- Add bounded `activities.watch` polling with explicit duration, interval, timeout and optional stop-on-change.
+- Build all three native helpers in one `tools/build_native.py` run; update capability readiness and version to 0.5.0.
+- Device acceptance on iPhone SE 2 / iOS 16.1.1 / 20B101 for all new operations; 62 Python tests pass.
+- Document remaining blockers for system alarms, reminders and risky settings; add `docs/COMPLETION_REPORT.md` and `evidence/features-0.5.0.json`.
+
 ## 0.4.0 — Settings brightness adapter
 
 - Extend `native/settings` with the `brightness` setting through `BrightnessSystemClient` (`DisplayBrightness`).

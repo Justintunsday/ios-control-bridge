@@ -1,0 +1,75 @@
+{
+  "schema": "ios-control-bridge.evidence.features.v1",
+  "project_version": "0.5.0",
+  "captured_at": "2026-11-04T20:54:00+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless"
+  },
+  "capabilities": {
+    "status": "verified",
+    "implemented": [
+      "device.info", "activities.get", "activities.watch",
+      "settings.get", "settings.set",
+      "browser.search", "browser.read", "browser.open",
+      "weather.current", "weather.forecast",
+      "files.list", "files.search", "files.read"
+    ],
+    "ready_to_query": "all of the implemented operations"
+  },
+  "activity_watch": {
+    "target_kind": "random UUID with no current Live Activity",
+    "status": "verified",
+    "samples": 2,
+    "target_found_ever": false,
+    "changed": false,
+    "duration_ms": 1500,
+    "interval_ms": 500,
+    "timeout_ms": 3000,
+    "note": "bounded foreground polling; no persistent daemon or notification path"
+  },
+  "files": {
+    "list": {"status": "verified", "count": 5, "truncated": true},
+    "search": {"status": "verified", "count": 5, "scanned": 30},
+    "read": {"status": "partial", "bytes_read": 4000, "truncated": true, "encoding": "utf-8"},
+    "invalid": {"status": "error", "reason": "invalid_path"}
+  },
+  "browser": {
+    "search": {
+      "status": "verified",
+      "provider": "Bing HTML",
+      "count": 1,
+      "attempts": [
+        {"provider": "DuckDuckGo HTML", "status": 202, "results": 0},
+        {"provider": "Bing HTML", "status": 200, "results": 1}
+      ]
+    },
+    "read": {"status": "verified", "title": "Example Domain", "final_url": "https://example.com/"},
+    "open": {"status": "verified", "opened": true, "source": "LSApplicationWorkspace",
+             "note": "one device acceptance opened the URL and brought Safari to the foreground"},
+    "invalid_url": {"status": "error", "reason": "unsupported_url_scheme"}
+  },
+  "weather": {
+    "provider": "Open-Meteo",
+    "attribution": "https://open-meteo.com/",
+    "current": {"status": "verified", "timezone": "Europe/Berlin",
+                "temperature_2m": 9.9, "relative_humidity_2m": 58,
+                "apparent_temperature": 6.7, "weather": "Partly cloudy"},
+    "forecast": {"status": "verified", "days": 2, "daily_count": 2},
+    "invalid": {"status": "error", "reason": "invalid_location"}
+  },
+  "tests": {
+    "python_unit": 62,
+    "local": "PASS",
+    "device": "PASS",
+    "remote_python": "3.9.9"
+  },
+  "remaining": {
+    "alarms": "not implemented; no public iOS 16 system-alarm API found and no safe fixed private service was identified",
+    "reminders": "not implemented; EventKit requires app context and user authorization, and the repository does not modify personal data without an explicit grant",
+    "settings": "volume and brightness implemented; low-power mode has no runtime setter in NSProcessInfo, and network/focus/orientation switches remain planned due private services and side effects"
+  }
+}

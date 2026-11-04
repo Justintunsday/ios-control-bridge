@@ -56,3 +56,28 @@
 | Python 测试 | 34 项通过 |
 
 本次验证只改变屏幕亮度并在同一轮恢复；没有修改音量、网络开关、闹钟、提醒事项或其他设置。
+
+## 文件、浏览器、天气与活动监测验证（0.5.0，2026-11-04）
+
+在 `/var/jb/var/root/ios-control-bridge` 重新构建三个原生 helper，并在 iPhone SE 2 / iOS 16.1.1 / 20B101 上执行 0.5.0 验收。完整机器可读摘要见 [features-0.5.0.json](../evidence/features-0.5.0.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| `capabilities` | verified；13 个 implemented 操作全部 ready |
+| `files.list` 仓库目录 | verified，5 项，`truncated=true` |
+| `files.search` 查询 `settings` | verified，5 项匹配，扫描 30 项 |
+| `files.read README.md`（4000 字节上限） | partial，UTF-8，按上限截断 |
+| 文件非法相对路径 | error / invalid_path |
+| `activities.watch` 随机不存在活动 ID | verified，2 个样本，均 target_found=false，无状态变化 |
+| `browser.search` "iPhone terminal emulator" | verified；DuckDuckGo 返回 202/0 结果，Bing 回退返回结果 |
+| `browser.read https://example.com/` | verified，标题 Example Domain，最终 URL 一致 |
+| `browser.open https://example.com/` | verified，LaunchServices 接受并打开；Safari 被带到前台 |
+| 非 HTTP(S) URL | error / unsupported_url_scheme |
+| `weather.current` 柏林坐标 | verified，Open-Meteo，Europe/Berlin，部分多云 |
+| `weather.forecast` 2 天 | verified，2 条日预报 |
+| 非法坐标 | error / invalid_location |
+| Python 测试 | 62 项通过（设备 Python 3.9.9） |
+
+浏览器 provider 是外部页面，DuckDuckGo 可能返回 202 或空结果；适配器在空结果时回退 Bing，并在 `attempts` 中保留每次尝试。`browser.open` 是真实前台 UI 操作，已明确记录。
+
+系统闹钟、提醒事项、低电量模式、网络开关、专注模式和方向锁定仍未实现；阻塞原因与后续建议见 [完成报告](COMPLETION_REPORT.md)。

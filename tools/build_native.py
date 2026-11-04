@@ -12,7 +12,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 
 def run(args, seconds=120):
@@ -44,6 +44,20 @@ def build_activities(sdk, tools, build, stage, steps):
                       "-swift-version", "5", "-Onone", "-module-cache-path", build / "ModuleCache",
                       "-import-objc-header", source / "ActivityBridge.h", source / "main.swift",
                       stage / "ActivityBridge.o", stage / "libclang_rt.ios.a", "-o", binary]))
+    steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
+    binary.chmod(0o755)
+    return binary
+
+
+def build_browser(sdk, tools, build, stage, steps):
+    source = ROOT / "native/browser"
+    binary = stage / "icb-open-url"
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      "-fobjc-arc", "-fblocks", "-O2", "-Wall", "-Wextra", "-c",
+                      source / "open_url.m", "-o", stage / "open_url.o"]))
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      stage / "open_url.o", "-framework", "Foundation", "-framework", "UIKit",
+                      "-o", binary]))
     steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
     binary.chmod(0o755)
     return binary
@@ -87,6 +101,7 @@ def main():
     steps = []
     activities_binary = build_activities(sdk, tools, build, stage, steps)
     settings_binary = build_settings(sdk, tools, build, stage, steps)
+    browser_binary = build_browser(sdk, tools, build, stage, steps)
     source_files = sorted(file for file in (ROOT / "native").rglob("*") if file.is_file())
     manifest = {
         "project": "ios-control-bridge",
@@ -98,6 +113,7 @@ def main():
         "binaries": {
             "icb-activities": {"sha256": digest(activities_binary)},
             "icb-settings": {"sha256": digest(settings_binary)},
+            "icb-open-url": {"sha256": digest(browser_binary)},
         },
         "binary_sha256": digest(activities_binary),
         "source_sha256": {str(file.relative_to(ROOT / "native")): digest(file) for file in source_files},
@@ -106,6 +122,7 @@ def main():
     # Replace only the project helpers after all compilation and signing steps pass.
     os.replace(activities_binary, build / "icb-activities")
     os.replace(settings_binary, build / "icb-settings")
+    os.replace(browser_binary, build / "icb-open-url")
     (build / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf8")
     print(json.dumps(manifest))
 
