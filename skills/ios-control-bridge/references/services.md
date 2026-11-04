@@ -14,7 +14,7 @@
 | 设置闹钟 | `alarms.create` / 明确 hour、minute、title | 系统闹钟返回真实 ID；写后读回，测试闹钟须清理 |
 | 修改已有闹钟 | `alarms.update` / `alarms.set_enabled` / `alarms.delete` | 用准确 ID；删除或改时不能扩大到全部；当前实现于私有 MobileTimer helper |
 | 提醒事项 | `reminders.lists` / `list` / `create` / `update` / `complete` / `delete` | 清单和条目 ID、时间与授权状态；当前设备无提醒账户，未实现 |
-| 日历 | `calendar.list` / `calendar.create` / `calendar.delete` | 显式标题和来源；创建后读回，按准确 ID 删除 |
+| 日历 | `calendar.list` / `calendar.create` / `calendar.delete` / `calendar.events` / `calendar.event_create` / `calendar.event_delete` | 显式标题、来源和时间范围；创建后读回，按准确 ID 删除 |
 | 网络查询 | `browser.search` / `browser.read` / `browser.open` | 搜索（DuckDuckGo，空结果回退 Bing）与正文读取有来源和截断标志；打开页面通过 LaunchServices，会切换前台 App |
 | 天气 | `weather.current` / `weather.forecast` | 地点、单位、供应方（Open-Meteo）、时区与数据时间；超时或失败不猜天气 |
 

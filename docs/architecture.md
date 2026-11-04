@@ -34,7 +34,7 @@
 
 ## EventKit 日历 helper
 
-`calendar.*` 使用独立 helper `native/calendar/CalendarBridge.m`，以 EventKit + `com.apple.private.tcc.allow`（Calendar/Reminders/AddressBook）和 `com.apple.private.calendar.calaccessd` entitlement 签名。该 helper 必须在 `/var/jb/usr/local/bin` 路径运行；同一二进制放在 `/var/jb/var/root/...` 会被 TCC/EventKit 拒绝。支持日历列举、在显式来源创建日历、按 ID 删除，并在写后读回。
+`calendar.*` 使用独立 helper `native/calendar/CalendarBridge.m`，以 EventKit + `com.apple.private.tcc.allow`（Calendar/Reminders/AddressBook）和 `com.apple.private.calendar.calaccessd` entitlement 签名。该 helper 必须在 `/var/jb/usr/local/bin` 路径运行；同一二进制放在 `/var/jb/var/root/...` 会被 TCC/EventKit 拒绝。支持日历列举、在显式来源创建日历、按 ID 删除、日期范围内事件查询、创建事件和按事件 ID 删除，并在写后读回。
 
 ## 可选 ElleKit SpringBoard bridge
 

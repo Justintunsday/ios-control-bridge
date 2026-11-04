@@ -34,6 +34,9 @@ OPERATIONS = [
     Operation("calendar.list", "List EventKit calendars and their sources", implemented=True, validation="device_verified"),
     Operation("calendar.create", "Create an EventKit calendar in an explicit source", mutates=True, implemented=True, validation="device_verified"),
     Operation("calendar.delete", "Delete one identified calendar", mutates=True, implemented=True, validation="device_verified"),
+    Operation("calendar.events", "List events in one calendar and explicit date range", implemented=True, validation="device_verified"),
+    Operation("calendar.event_create", "Create an event in one calendar", mutates=True, implemented=True, validation="device_verified"),
+    Operation("calendar.event_delete", "Delete one identified event", mutates=True, implemented=True, validation="device_verified"),
     Operation("reminders.lists", "Read reminder lists"),
     Operation("reminders.list", "Read reminders within a selected list and time range"),
     Operation("reminders.create", "Create a reminder with an explicit destination list", mutates=True),
@@ -155,6 +158,12 @@ def invoke(operation, params, request_id=None):
         return calendar.create_calendar(params, request_id)
     if operation == "calendar.delete":
         return calendar.delete_calendar(params, request_id)
+    if operation == "calendar.events":
+        return calendar.list_events(params, request_id)
+    if operation == "calendar.event_create":
+        return calendar.create_event(params, request_id)
+    if operation == "calendar.event_delete":
+        return calendar.delete_event(params, request_id)
     if operation == "files.list":
         return files.list_files(params, request_id)
     if operation == "files.search":

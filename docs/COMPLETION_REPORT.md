@@ -163,3 +163,10 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 - 提醒事项仍不可用：EventKit 授权为 authorized，但设备无提醒账户/默认清单，向各来源保存清单返回成功但不持久化。
 - 92 项 Python 测试通过；native build 现在生成 5 个 helper。
 - 证据：`evidence/calendar.json`。
+
+## 12. 0.10.0 补充：日历事件
+
+- 扩展私有 EventKit helper：`calendar.events`（日期范围查询）、`calendar.event_create`、`calendar.event_delete`。
+- 真机创建测试日历与 2026-11-05 10:00–11:00Z 测试事件，查询命中、删除事件、删除日历，最终日历数量恢复到 9。
+- 事件 ID 为 EventKit identifier（非 UUID），Python 适配器按有界字符串校验；时间范围显式要求 ISO-8601。
+- 97 项 Python 测试通过；证据：`evidence/calendar-events.json`。

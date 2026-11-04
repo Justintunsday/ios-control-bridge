@@ -8,10 +8,14 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from ios_control_bridge.calendar import (NATIVE_SCHEMA, NATIVE_SOURCE, create_calendar,
-                                         delete_calendar, list_calendars)
+                                         create_event, delete_calendar, delete_event,
+                                         list_calendars, list_events)
 
 VERSION = {"ProductVersion": "16.1.1", "ProductBuildVersion": "20B101"}
 ID = "1DF0A9B7-6211-4FD8-A80A-03BEF357532A"
+EVENT_ID = "2DF0A9B7-6211-4FD8-A80A-03BEF357532A"
+START = "2026-11-05T10:00:00Z"
+END = "2026-11-05T11:00:00Z"
 
 
 def calendar(**changes):
@@ -80,6 +84,36 @@ class CalendarBoundaryTests(unittest.TestCase):
 
     def test_delete_invalid_id(self):
         self.assertEqual(delete_calendar({"calendar_id": "bad"})["reason"], "invalid_calendar_id")
+
+    def test_list_events(self):
+        event = {"id": EVENT_ID, "title": "Event", "calendar_id": ID, "start": 1.0,
+                 "end": 2.0, "all_day": False}
+        with self.mock_run(payload(events=[event], count=1)):
+            output = list_events({"calendar_id": ID, "start": START, "end": END})
+        self.assertEqual(output["status"], "verified")
+        self.assertEqual(output["data"]["events"][0]["id"], EVENT_ID)
+
+    def test_list_events_rejects_bad_range(self):
+        output = list_events({"calendar_id": ID, "start": END, "end": START})
+        self.assertEqual(output["reason"], "invalid_date_range")
+
+    def test_create_event(self):
+        event = {"id": EVENT_ID, "title": "Event", "calendar_id": ID, "start": 1.0,
+                 "end": 2.0, "all_day": False}
+        with self.mock_run(payload(event=event)):
+            output = create_event({"calendar_id": ID, "title": "Event", "start": START, "end": END})
+        self.assertEqual(output["status"], "verified")
+
+    def test_create_event_validation(self):
+        self.assertEqual(create_event({"calendar_id": ID, "title": "", "start": START,
+                                       "end": END})["reason"], "invalid_title")
+        self.assertEqual(create_event({"calendar_id": ID, "title": "x", "start": "bad",
+                                       "end": END})["reason"], "invalid_start")
+
+    def test_delete_event(self):
+        with self.mock_run(payload(deleted=True, event_id=EVENT_ID)):
+            output = delete_event({"event_id": EVENT_ID})
+        self.assertEqual(output["status"], "verified")
 
     def test_unverified_build(self):
         with patch("ios_control_bridge.calendar.ios_version",

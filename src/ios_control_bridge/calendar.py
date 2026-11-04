@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import os
 import subprocess
+from datetime import datetime, timezone
 from uuid import UUID
 
 from .device import ios_version
@@ -133,6 +134,133 @@ def delete_calendar(params, request_id=None):
     if payload["status"] != "verified":
         return _failed(operation, payload, request_id)
     if payload.get("deleted") is not True or payload.get("calendar_id") != identifier:
+        return result(operation, "error", reason="native_delete_inconsistent", request_id=request_id)
+    return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
+                  request_id=request_id, complete=True)
+
+
+def _calendar_id(params, request_id):
+    value = params.get("calendar_id")
+    if not isinstance(value, str):
+        return None, result("calendar", "error", reason="invalid_calendar_id", request_id=request_id)
+    try:
+        return str(UUID(value)).upper(), None
+    except (TypeError, ValueError, AttributeError):
+        return None, result("calendar", "error", reason="invalid_calendar_id", request_id=request_id)
+
+
+def _event_id(params, request_id):
+    value = params.get("event_id")
+    if not isinstance(value, str) or not 1 <= len(value) <= 128:
+        return None, result("calendar", "error", reason="invalid_event_id", request_id=request_id)
+    return value, None
+
+
+def _date(value, name, request_id):
+    if not isinstance(value, str) or not value:
+        return None, result("calendar", "error", reason="invalid_" + name, request_id=request_id)
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None, result("calendar", "error", reason="invalid_" + name, request_id=request_id)
+    if parsed.tzinfo is None:
+        return None, result("calendar", "error", reason="invalid_" + name, request_id=request_id)
+    return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), None
+
+
+def list_events(params, request_id=None):
+    operation = "calendar.events"
+    extra = set(params) - {"calendar_id", "start", "end"}
+    if extra:
+        return result(operation, "error", reason="unknown_parameters", request_id=request_id)
+    identifier, failure = _calendar_id(params, request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    start, failure = _date(params.get("start"), "start", request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    end, failure = _date(params.get("end"), "end", request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    if datetime.fromisoformat(end.replace("Z", "+00:00")) <= datetime.fromisoformat(start.replace("Z", "+00:00")):
+        return result(operation, "error", reason="invalid_date_range", request_id=request_id)
+    gate = _gate(operation, request_id)
+    if gate:
+        return gate
+    payload, failure = _invoke(["events", identifier, start, end], operation, request_id)
+    if failure:
+        return failure
+    if payload["status"] != "verified":
+        return _failed(operation, payload, request_id)
+    if not isinstance(payload.get("events"), list):
+        return result(operation, "error", reason="native_events_invalid", request_id=request_id)
+    return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
+                  request_id=request_id, complete=True)
+
+
+def create_event(params, request_id=None):
+    operation = "calendar.event_create"
+    extra = set(params) - {"calendar_id", "title", "start", "end", "notes"}
+    if extra:
+        return result(operation, "error", reason="unknown_parameters", request_id=request_id)
+    identifier, failure = _calendar_id(params, request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    title = params.get("title")
+    if not isinstance(title, str) or not 1 <= len(title) <= 128:
+        return result(operation, "error", reason="invalid_title", request_id=request_id)
+    notes = params.get("notes", "")
+    if not isinstance(notes, str) or len(notes) > 1024:
+        return result(operation, "error", reason="invalid_notes", request_id=request_id)
+    start, failure = _date(params.get("start"), "start", request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    end, failure = _date(params.get("end"), "end", request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    if datetime.fromisoformat(end.replace("Z", "+00:00")) <= datetime.fromisoformat(start.replace("Z", "+00:00")):
+        return result(operation, "error", reason="invalid_date_range", request_id=request_id)
+    gate = _gate(operation, request_id)
+    if gate:
+        return gate
+    arguments = ["event_create", identifier, title, start, end] + ([notes] if notes else [])
+    payload, failure = _invoke(arguments, operation, request_id)
+    if failure:
+        return failure
+    if payload["status"] != "verified":
+        return _failed(operation, payload, request_id)
+    event = payload.get("event")
+    if not isinstance(event, dict) or event.get("calendar_id") != identifier or event.get("title") != title:
+        return result(operation, "partial", data=payload, reason="readback_mismatch",
+                      request_id=request_id, complete=False)
+    return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
+                  request_id=request_id, complete=True)
+
+
+def delete_event(params, request_id=None):
+    operation = "calendar.event_delete"
+    extra = set(params) - {"event_id"}
+    if extra:
+        return result(operation, "error", reason="unknown_parameters", request_id=request_id)
+    identifier, failure = _event_id(params, request_id)
+    if failure:
+        failure["operation"] = operation
+        return failure
+    gate = _gate(operation, request_id)
+    if gate:
+        return gate
+    payload, failure = _invoke(["event_delete", identifier], operation, request_id)
+    if failure:
+        return failure
+    if payload["status"] != "verified":
+        return _failed(operation, payload, request_id)
+    if payload.get("deleted") is not True or payload.get("event_id") != identifier:
         return result(operation, "error", reason="native_delete_inconsistent", request_id=request_id)
     return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
                   request_id=request_id, complete=True)

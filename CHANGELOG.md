@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0 — Calendar events
+
+- Extend the EventKit calendar helper with `calendar.events`, `calendar.event_create` and `calendar.event_delete`.
+- Enforce explicit calendar IDs, ISO-8601 date ranges and readback verification.
+- Device acceptance: create a test calendar and event, list it, delete the event (count 0), delete the calendar, final count 9.
+- Event IDs are EventKit identifiers (not UUIDs); validate them as bounded strings.
+- 97 Python tests pass.
+
 ## 0.9.0 — EventKit calendar support
 
 - Add `native/calendar/CalendarBridge.m` using EventKit with CalendarDaemon TCC entitlements.

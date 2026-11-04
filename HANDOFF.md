@@ -10,7 +10,7 @@
 
 ## 已完成和未完成
 
-- 已实现并在迁移后的独立目录验证（0.9.0）：`device.info`、`activities.get` / `activities.watch`、音量/亮度/低电量模式/方向锁定的 `settings.get` / `settings.set`、Wi-Fi/飞行模式/蓝牙只读、系统闹钟 `alarms.*`、日历 `calendar.*`、`browser.search` / `read` / `open`、`weather.current` / `forecast`、`files.list` / `search` / `read`。
+- 已实现并在迁移后的独立目录验证（0.10.0）：`device.info`、`activities.get` / `activities.watch`、音量/亮度/低电量模式/方向锁定的 `settings.get` / `settings.set`、Wi-Fi/飞行模式/蓝牙只读、系统闹钟 `alarms.*`、日历与事件 `calendar.*`、`browser.search` / `read` / `open`、`weather.current` / `forecast`、`files.list` / `search` / `read`。
 - 原生实时活动读取器支持当前 iOS 16.1.1 / 20B101 上的跨 App 原始正文、Attributes 和状态读取。单次查询不是常驻监听。
 - 统一入口为 `bin/iosctl`，Python 3.9+；接口结果为 JSON，协议在 `schemas/`。
 - 提醒事项、Wi-Fi/蓝牙/飞行模式/蜂窝/专注模式的可写控制及常驻监听仍未实现。系统闹钟已通过私有 `MobileTimer.framework` 实现；日历已通过私有 EventKit + TCC entitlement 实现。提醒事项授权可用，但设备没有提醒账户/默认清单，创建不持久。Wi-Fi/飞行模式/蓝牙已提供只读状态，写入返回 `read_only_setting`；蓝牙 `setEnabled:` 在 CLI 与 SpringBoard 均未生效，Wi-Fi/飞行模式写入存在断网风险。注册表中的 planned 操作必须返回 `unavailable/not_implemented`。低电量模式、方向锁定和只读网络状态依赖可选 ElleKit bridge（`native/ellekit`，`tools/build_ellekit_bridge.py`）；未安装 bridge 时相关设置返回 `ellekit_bridge_unavailable`。

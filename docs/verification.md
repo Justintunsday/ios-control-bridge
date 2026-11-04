@@ -153,3 +153,20 @@ ElleKit bridge 增加 `get_bluetooth`，并把 Wi-Fi、飞行模式、蓝牙作�
 TCC/EventKit 对路径敏感：同一 helper 位于 `/var/jb/usr/local/bin/icb-calendar` 时可以访问，位于 `/var/jb/var/root/...` 时返回 `calendar_access_denied`。部署时需要复制到 `/var/jb/usr/local/bin/icb-calendar`。
 
 提醒事项仍不可用：authorization 为 authorized，但设备没有提醒账户/默认清单；在 iCloud、Subscribed、Other 来源创建提醒清单都返回成功但不会持久化（提醒清单数量始终为 0）。
+
+## 日历事件验证（0.10.0，2026-11-04）
+
+在 0.9.0 日历容器基础上增加事件操作，摘要见 [calendar-events.json](../evidence/calendar-events.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| `calendar.create` 测试日历 | verified |
+| `calendar.event_create` 2026-11-05 10:00–11:00Z | verified |
+| `calendar.events` 查询同一范围 | verified，找到事件 |
+| `calendar.event_delete` | verified |
+| 删除后 `calendar.events` | verified，count 0 |
+| `calendar.delete` 测试日历 | verified |
+| `calendar.list` 最终 | verified，9 个日历 |
+| Python 测试 | 97 项通过 |
+
+事件 ID 使用 EventKit 的 event identifier，并非 UUID；适配器按有界字符串校验并精确删除。测试日历与事件均已清理。
