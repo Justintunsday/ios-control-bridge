@@ -38,6 +38,12 @@ def device_info(request_id=None):
         "model": None,
     }
     sysctl = shutil.which("sysctl")
+    if sysctl is None:
+        for candidate in ("/usr/sbin/sysctl", "/usr/bin/sysctl", "/var/jb/usr/sbin/sysctl",
+                          "/var/jb/usr/bin/sysctl", "/var/jb/sbin/sysctl"):
+            if os.path.exists(candidate):
+                sysctl = candidate
+                break
     if sysctl:
         try:
             model = subprocess.run([sysctl, "-n", "hw.machine"], capture_output=True,

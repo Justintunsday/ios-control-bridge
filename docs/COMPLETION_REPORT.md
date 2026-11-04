@@ -178,3 +178,11 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 - 真机：读取用户自己的提醒；创建测试提醒 “ICB Reminder Acceptance”，改名、完成、删除；最终清单数量回到 1，用户提醒未被修改。
 - 106 项 Python 测试通过；native build 现在生成 6 个 helper。
 - 证据：`evidence/reminders.json`。
+
+## 14. 0.11.0 全量回归结果
+
+- 本机与设备端各 106 项 Python 测试通过。
+- 设备验收 53 项：52 verified，1 项预期的 `read_only_setting`，0 partial，0 失败。
+- 覆盖 capabilities、device.info、全部设置读写与恢复、活动监测、闹钟、日历/事件、提醒事项、文件、浏览器和天气。
+- 测试数据全部清理：闹钟 0→0、日历 9→9、提醒清单 1→1；用户提醒 “test” 未被修改；所有可写设置恢复到原值。
+- 修复 `device.info` 在 sudo/PATH 环境下的 `sysctl` 查找失败（绝对路径回退）；证据见 `evidence/full-revalidation-0.11.0.json`。

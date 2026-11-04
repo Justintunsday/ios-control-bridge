@@ -1,0 +1,55 @@
+{
+  "schema": "ios-control-bridge.evidence.full-revalidation.v1",
+  "project_version": "0.11.0",
+  "captured_at": "2026-11-04T22:27:00+08:00",
+  "device": {"model": "iPhone12,8", "ios": "16.1.1", "build": "20B101", "bootstrap": "/var/jb"},
+  "suites": {
+    "local_python": {"tests": 106, "result": "PASS"},
+    "device_python": {"tests": 106, "result": "PASS"},
+    "device_acceptance": {
+      "checks": 53,
+      "verified": 52,
+      "expected_unavailable": 1,
+      "partial": 0,
+      "failed": 0,
+      "expected_unavailable_detail": "settings.set wifi returns unavailable/read_only_setting by design"
+    }
+  },
+  "coverage": [
+    "capabilities (all registered operations implemented, version 0.11.0)",
+    "device.info",
+    "settings.get/set volume, brightness, low_power, orientation_lock with restore",
+    "settings.get wifi/airplane/bluetooth and read-only rejection",
+    "activities.watch bounded polling",
+    "alarms list/create/update/set_enabled/delete with cleanup",
+    "calendar list/create/delete and event query/create/delete with cleanup",
+    "reminders lists/list/create/update/complete/delete with cleanup",
+    "files list/search/read",
+    "browser.read https://example.com",
+    "weather current/forecast from Open-Meteo"
+  ],
+  "cleanup": {
+    "alarms_before": 0,
+    "alarms_after": 0,
+    "calendars_before": 9,
+    "calendars_after": 9,
+    "reminders_before": 1,
+    "reminders_after": 1,
+    "settings_restored": {
+      "volume": 0,
+      "brightness": 0.8878145813941956,
+      "low_power": false,
+      "orientation_lock": false
+    },
+    "user_reminder": "The user's reminder named 'test' was read only and remained present.",
+    "test_artifacts_remaining": 0
+  },
+  "fixes_during_revalidation": [
+    "device.info now falls back to absolute sysctl paths when sudo resets PATH; before the fix it returned partial/model_unavailable under the acceptance wrapper.",
+    "Acceptance file read uses a limit large enough to avoid a legitimate partial/truncated result."
+  ],
+  "notes": [
+    "A transient brightness readback mismatch occurred once during acceptance; a focused rerun and the final full acceptance run verified both set and restore. Auto-brightness can change the reference value around a set.",
+    "No test alarm, calendar, event or reminder remains; all writable settings were restored."
+  ]
+}

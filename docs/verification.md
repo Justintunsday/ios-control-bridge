@@ -188,3 +188,24 @@ TCC/EventKit 对路径敏感：同一 helper 位于 `/var/jb/usr/local/bin/icb-c
 | Python 测试 | 106 项通过 |
 
 测试提醒已清理；用户的 “test” 提醒只读，未修改。
+
+## 全量回归（0.11.0，2026-11-04 22:27）
+
+对全部已实现能力重新执行本机测试、设备端测试和一次设备验收脚本；结果见 [full-revalidation-0.11.0.json](../evidence/full-revalidation-0.11.0.json)。
+
+| 项目 | 结果 |
+| --- | --- |
+| 本机 Python 测试 | 106 项通过 |
+| 设备端 Python 测试 | 106 项通过 |
+| 设备验收检查 | 53 项：52 verified，1 项预期 `read_only_setting`，0 partial，0 失败 |
+| 闹钟 | 创建/列表/改时/启停/删除全部 verified；测试闹钟已删除，原有 0 个 |
+| 日历与事件 | 创建/列表/事件创建/事件查询/事件删除/日历删除全部 verified；日历数 9 → 9 |
+| 提醒事项 | 列表/读取/创建/改名/完成/删除全部 verified；清单数 1 → 1，用户的提醒仍在 |
+| 设置读写 | 音量、亮度、低电量、方向锁定均设置并恢复；最终值恢复 |
+| 只读设置 | Wi-Fi/飞行模式/蓝牙读取 verified；写 Wi-Fi 返回 `read_only_setting` |
+| 活动监测 | `activities.watch` verified（有界轮询） |
+| 文件 | list/search/read 全部 verified |
+| 网络服务 | browser.read（example.com）、weather.current/forecast 全部 verified |
+| 测试残留 | 0 个测试闹钟/日历/事件/提醒 |
+
+验收期间发现 `device.info` 在 sudo 重置 PATH 时返回 `partial/model_unavailable`，已改为按绝对路径查找 `sysctl` 并重新验证为 verified。光线自动调整可能让一次亮度恢复读回出现瞬时偏差；聚焦重测和最终全量重跑均为 verified。
