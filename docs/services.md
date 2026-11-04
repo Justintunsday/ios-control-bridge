@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | device | `info` | 当前 OS / build、型号、UID 与 bootstrap 证据来自设备 |
 | settings | `get`, `set` | 每个设置项分别声明支持版本、值类型和权限；修改后读回；不支持的项目明确报告。媒体音量（`volume`）、屏幕亮度（`brightness`）、低电量模式（`low_power`，布尔）与方向锁定（`orientation_lock`，布尔）已实现并真机验证；Wi-Fi/飞行模式/蓝牙（`wifi`/`airplane`/`bluetooth`）为只读；后五项通过可选 ElleKit SpringBoard bridge |
-| alarms | `list`, `create`, `update`, `set_enabled`, `delete` | 返回系统时钟真实闹钟的稳定 ID；时间、时区、重复和启停可读回；测试样本可清理 |
+| alarms | `list`, `create`, `update`, `set_enabled`, `delete` | 返回系统时钟真实闹钟的稳定 ID；时间、标签、启停可读回；测试样本已清理。已实现并真机验证，使用私有 `MobileTimer.framework` 与 `com.apple.private.mobiletimerd` entitlement |
 | reminders | `lists`, `list`, `create`, `update`, `complete`, `delete` | 基于明确清单和条目 ID 读取、写入并读回，保留授权状态和分页 / 范围限制 |
 | browser | `search`, `read`, `open` | 搜索有真实结果及 URL（DuckDuckGo HTML，空结果时回退 Bing HTML）；读取有最终 URL、提取时间和截断标志；打开页面通过 LaunchServices 执行并报告实际层级 |
 | weather | `current`, `forecast` | 输入明确位置与单位；输出供应方（当前为 Open-Meteo）、观测 / 预报时间与时区；网络失败不回填旧数据冒充当前 |
@@ -19,7 +19,7 @@
 
 ## 时间与个人事项
 
-闹钟的目标是系统时钟中的真实闹钟。当前 iOS 16 基线需要核对系统闹钟服务的实际运行时接口；Apple 的 [AlarmKit](https://developer.apple.com/videos/play/wwdc2025/230/) 面向 iOS / iPadOS 26，不能直接用作当前设备适配。
+闹钟的目标是系统时钟中的真实闹钟。当前通过私有 `MobileTimer.framework` 的 `MTAlarmManager` 访问系统 Clock 服务，helper 使用 `com.apple.private.mobiletimerd` entitlement；已支持列表、创建、改时/标签、启停和删除。重复规则目前只保留原始 repeatSchedule 字段，未提供按星期几的语义化参数；时区沿用设备当前时区。Apple 的 [AlarmKit](https://developer.apple.com/videos/play/wwdc2025/230/) 面向 iOS / iPadOS 26，不能直接用于当前设备。
 
 提醒事项优先使用已有系统公开能力。[EventKit](https://developer.apple.com/documentation/eventkit/accessing-the-event-store) 的授权和用途说明随系统版本变化；iOS 16 与 iOS 17+ 分别处理。若终端进程不具备需要的授权或 App 上下文，再实现明确的原生 helper 入口。当前仓库不自动修改个人事项或授权数据库。
 

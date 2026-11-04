@@ -146,3 +146,11 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 - 设备结果：Wi-Fi true（enabled=1 associated=1）、飞行模式 false、蓝牙 false；低电量读取仍正常；测试 71 项通过。
 - 蓝牙写入未实现：`BluetoothManager -setEnabled:` 在 CLI 和 SpringBoard 上下文都返回未生效；Wi-Fi/飞行模式写入会断开当前 SSH 网络，未做未经验证的写操作。
 - 证据：`evidence/readonly-network-settings.json`；相关说明已同步到 README、服务范围、架构、验证、技能与 HANDOFF。
+
+## 10. 0.8.0 补充：系统闹钟（私有 MobileTimer）
+
+- 新增 helper `native/alarms/AlarmsBridge.m`，通过私有 `MobileTimer.framework` 的 `MTAlarmManager` 实现 `alarms.list/create/update/set_enabled/delete`。
+- 签名使用 `com.apple.private.mobiletimerd` 与 MobileTimer mach-lookup entitlement；没有该 entitlement 时 `alarmsSync` 返回 nil。
+- 真机完成创建 23:57 → 列表 → 改为 23:56/新标签 → 禁用/启用 → 删除 → 列表确认不存在；探测产生的两个测试闹钟均已清理，最终无测试闹钟。
+- 84 项 Python 测试通过；`tools/build_native.py` 现在构建并签名四个 helper。
+- 证据：`evidence/alarms.json`。仍未实现：提醒事项、日历、Wi-Fi/蓝牙/飞行模式/蜂窝/专注模式可写控制、常驻监听。

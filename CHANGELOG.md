@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 — System Clock alarms through MobileTimer
+
+- Add native helper `native/alarms/AlarmsBridge.m` using the private MobileTimer `MTAlarmManager`.
+- Sign the helper with `com.apple.private.mobiletimerd` and the MobileTimer mach-lookup entitlement; this is required for the alarm service.
+- Implement `alarms.list`, `alarms.create`, `alarms.update`, `alarms.set_enabled` and `alarms.delete` with readback verification.
+- Device acceptance on iPhone SE 2 / iOS 16.1.1 / 20B101: create 23:57, list, update to 23:56, disable/enable, delete, final list absent; test alarm removed.
+- 84 Python tests pass; extend `tools/build_native.py` to build and sign four helpers.
+
 ## 0.7.0 — Read-only network and Bluetooth state
 
 - Add read-only `wifi`, `airplane` and `bluetooth` settings through the ElleKit SpringBoard bridge.

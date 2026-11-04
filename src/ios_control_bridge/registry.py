@@ -1,7 +1,7 @@
 """Declare project scope separately from implemented and device-verified adapters."""
 from dataclasses import asdict, dataclass
 
-from . import browser, files, weather
+from . import alarms, browser, files, weather
 from .activities import (get_activity, helper_path as activities_helper_path,
                          watch_activity)
 from .browser import open_helper_path as browser_open_helper_path
@@ -26,11 +26,11 @@ OPERATIONS = [
     Operation("activities.watch", "Monitor activity changes until an explicit stop condition", implemented=True, validation="device_verified"),
     Operation("settings.get", "Read a supported setting (volume, brightness, low_power, orientation_lock, wifi, airplane, bluetooth)", implemented=True, validation="device_verified"),
     Operation("settings.set", "Change a writable setting and verify the readback (volume, brightness, low_power, orientation_lock); network/Bluetooth settings are read-only", mutates=True, implemented=True, validation="device_verified"),
-    Operation("alarms.list", "Read system alarms"),
-    Operation("alarms.create", "Create an alarm with explicit time, timezone and repetition", mutates=True),
-    Operation("alarms.update", "Modify one alarm by stable ID", mutates=True),
-    Operation("alarms.set_enabled", "Enable or disable one alarm", mutates=True),
-    Operation("alarms.delete", "Delete one identified alarm", mutates=True),
+    Operation("alarms.list", "Read system alarms", implemented=True, validation="device_verified"),
+    Operation("alarms.create", "Create an alarm with explicit time and title", mutates=True, implemented=True, validation="device_verified"),
+    Operation("alarms.update", "Modify one alarm by stable ID", mutates=True, implemented=True, validation="device_verified"),
+    Operation("alarms.set_enabled", "Enable or disable one alarm", mutates=True, implemented=True, validation="device_verified"),
+    Operation("alarms.delete", "Delete one identified alarm", mutates=True, implemented=True, validation="device_verified"),
     Operation("reminders.lists", "Read reminder lists"),
     Operation("reminders.list", "Read reminders within a selected list and time range"),
     Operation("reminders.create", "Create a reminder with an explicit destination list", mutates=True),
@@ -89,6 +89,9 @@ def catalog(service=None):
         elif operation.name == "browser.open":
             if not browser_open_helper_path().is_file():
                 ready, reason = False, "native_helper_missing"
+        elif operation.name.startswith("alarms."):
+            if not alarms.helper_path().is_file():
+                ready, reason = False, "native_helper_missing"
         row["runtime"] = {"ready_to_query": ready, "reason": reason}
         if operation.name.startswith("settings."):
             row["supported_settings"] = list(SUPPORTED_SETTINGS)
@@ -130,6 +133,16 @@ def invoke(operation, params, request_id=None):
         return weather.current(params, request_id)
     if operation == "weather.forecast":
         return weather.forecast(params, request_id)
+    if operation == "alarms.list":
+        return alarms.list_alarms(params, request_id)
+    if operation == "alarms.create":
+        return alarms.create_alarm(params, request_id)
+    if operation == "alarms.update":
+        return alarms.update_alarm(params, request_id)
+    if operation == "alarms.set_enabled":
+        return alarms.set_enabled(params, request_id)
+    if operation == "alarms.delete":
+        return alarms.delete_alarm(params, request_id)
     if operation == "files.list":
         return files.list_files(params, request_id)
     if operation == "files.search":

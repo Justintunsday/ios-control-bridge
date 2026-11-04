@@ -11,8 +11,8 @@
 | 低电量模式 / 方向锁定 | `settings.get` / `settings.set`，参数 `{"setting":"low_power"}` 或 `{"setting":"orientation_lock"}`；写入 `"value"` 为 true/false | 需要可选 ElleKit SpringBoard bridge；写后读回，测试后恢复原值 |
 | Wi-Fi / 飞行模式 / 蓝牙状态 | `settings.get`，参数 `{"setting":"wifi"}` / `airplane` / `bluetooth` | 只读；写入返回 `unavailable/read_only_setting` |
 | 文件 | `files.list` / `files.search` / `files.read`，显式绝对路径 | 结果有界；权限失败与空结果区分；只读指定文件 |
-| 设置闹钟 | `alarms.create` / 明确时间、时区、重复、标签 | 系统闹钟返回真实 ID；时间有歧义时补齐，不推定已创建 |
-| 修改已有闹钟 | `alarms.update` / `alarms.set_enabled` / `alarms.delete` | 用准确 ID；删除或改时不能扩大到全部 |
+| 设置闹钟 | `alarms.create` / 明确 hour、minute、title | 系统闹钟返回真实 ID；写后读回，测试闹钟须清理 |
+| 修改已有闹钟 | `alarms.update` / `alarms.set_enabled` / `alarms.delete` | 用准确 ID；删除或改时不能扩大到全部；当前实现于私有 MobileTimer helper |
 | 提醒事项 | `reminders.lists` / `list` / `create` / `update` / `complete` / `delete` | 清单和条目 ID、时间与授权状态 |
 | 网络查询 | `browser.search` / `browser.read` / `browser.open` | 搜索（DuckDuckGo，空结果回退 Bing）与正文读取有来源和截断标志；打开页面通过 LaunchServices，会切换前台 App |
 | 天气 | `weather.current` / `weather.forecast` | 地点、单位、供应方（Open-Meteo）、时区与数据时间；超时或失败不猜天气 |

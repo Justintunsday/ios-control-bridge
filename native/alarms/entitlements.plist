@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>platform-application</key><true/>
+<key>com.apple.private.security.no-sandbox</key><true/>
+<key>com.apple.private.mobiletimerd</key><true/>
+<key>com.apple.private.ClockAngel.client</key><true/>
+<key>com.apple.security.exception.mach-lookup.global-name</key>
+<array>
+<string>com.apple.MobileTimer.timerserver</string>
+<string>com.apple.sessionservices</string>
+</array>
+</dict></plist>

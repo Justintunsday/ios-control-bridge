@@ -1,0 +1,37 @@
+{
+  "schema": "ios-control-bridge.evidence.alarms.v1",
+  "project_version": "0.8.0",
+  "captured_at": "2026-11-04T21:43:00+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless"
+  },
+  "component": {
+    "source": "native/alarms/AlarmsBridge.m",
+    "helper": "build/native/icb-alarms",
+    "helper_sha256": "72367743c3e84c09e56d1a2b2355634a1f66ef60721b76ff9535c79f52afcf80",
+    "framework": "MobileTimer.framework",
+    "class": "MTAlarmManager",
+    "entitlements": ["com.apple.private.mobiletimerd", "com.apple.private.ClockAngel.client",
+                     "com.apple.security.exception.mach-lookup.global-name",
+                     "platform-application", "com.apple.private.security.no-sandbox"]
+  },
+  "acceptance": [
+    {"operation": "alarms.list", "status": "verified", "count": 0},
+    {"operation": "alarms.create", "status": "verified", "hour": 23, "minute": 57,
+     "title": "ICB Alarm Acceptance", "alarm_id": "4679EE65-76D0-487F-AE78-A5A9A355133D"},
+    {"operation": "alarms.list after create", "status": "verified", "found": true},
+    {"operation": "alarms.update", "status": "verified", "minute": 56,
+     "title": "ICB Alarm Acceptance 2"},
+    {"operation": "alarms.set_enabled false", "status": "verified"},
+    {"operation": "alarms.set_enabled true (restore)", "status": "verified"},
+    {"operation": "alarms.delete", "status": "verified"},
+    {"operation": "alarms.list after delete", "status": "verified", "found": false},
+    {"operation": "cleanup of earlier probe alarm", "status": "verified", "remaining": 0}
+  ],
+  "note": "An earlier manual helper probe created a second test alarm; both test alarms were removed before final state. No user alarm was modified.",
+  "tests": {"python_unit": 84, "local": "PASS", "device": "PASS", "remote": 84}
+}

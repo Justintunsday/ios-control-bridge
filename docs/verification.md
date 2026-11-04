@@ -116,3 +116,22 @@ ElleKit bridge 增加 `get_bluetooth`，并把 Wi-Fi、飞行模式、蓝牙作�
 | Python 测试 | 71 项通过（设备 Python 3.9.9） |
 
 `BluetoothManager -setEnabled:` 在 CLI helper 与 SpringBoard bridge 中均返回 `accepted=0` 且状态不变，因此未实现蓝牙写入。
+
+## 系统闹钟验证（0.8.0，2026-11-04）
+
+新增 `native/alarms/AlarmsBridge.m`，通过私有 `MobileTimer.framework` 的 `MTAlarmManager` 访问系统 Clock 服务；helper 使用 `com.apple.private.mobiletimerd`、`com.apple.private.ClockAngel.client` 和 MobileTimer mach-lookup entitlement 签名。完整摘要见 [alarms.json](../evidence/alarms.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| `alarms.list` | verified，0 个用户闹钟 |
+| `alarms.create {"hour":23,"minute":57,"title":"ICB Alarm Acceptance"}` | verified，返回真实 alarm ID |
+| 创建后 `alarms.list` | verified，能找到该 ID |
+| `alarms.update` 改为 minute 56、标签 2 | verified |
+| `alarms.set_enabled false` | verified |
+| `alarms.set_enabled true`（恢复） | verified |
+| `alarms.delete` | verified |
+| 删除后 `alarms.list` | verified，该 ID 不存在 |
+| 清理探测产生的另一个测试闹钟 | verified，最终 0 个测试闹钟 |
+| Python 测试 | 84 项通过（设备端 82 项旧同步集；新测试已加入） |
+
+测试闹钟时间为 23:57 且立即删除，没有等待触发；没有修改用户已有闹钟。

@@ -25,13 +25,14 @@ class CLIContractTests(unittest.TestCase):
         self.assertEqual(rows["settings.get"]["supported_settings"],
                          ["volume", "brightness", "low_power", "orientation_lock",
                           "wifi", "airplane", "bluetooth"])
-        for name in ("alarms.create", "reminders.create"):
+        self.assertTrue(rows["alarms.list"]["implemented"])
+        for name in ("reminders.create", "reminders.complete"):
             self.assertFalse(rows[name]["implemented"])
             self.assertFalse(rows[name]["runtime"]["ready_to_query"])
 
     def test_planned_write_cannot_fall_back_to_a_command(self):
         with patch("subprocess.run", side_effect=AssertionError("unexpected device command")):
-            output = invoke("alarms.create", {"time": "07:00"})
+            output = invoke("reminders.create", {"title": "test"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "not_implemented")
         self.assertFalse(output["complete_for_scope"])
@@ -44,7 +45,7 @@ class CLIContractTests(unittest.TestCase):
         self.assertFalse(output["complete_for_scope"])
 
     def test_invalid_json_is_machine_readable_error(self):
-        code, output = self.cli("call", "alarms.create", "--params", "{")
+        code, output = self.cli("call", "reminders.create", "--params", "{")
         self.assertEqual(code, 4)
         self.assertEqual(output["status"], "error")
         self.assertNotIn("data", output)
@@ -61,7 +62,7 @@ class CLIContractTests(unittest.TestCase):
 
     def test_request_id_survives_unavailable_operation(self):
         identifier = "debd4d72-1860-4d98-a3d0-c026ddbd1744"
-        code, output = self.cli("call", "alarms.create", "--request-id", identifier)
+        code, output = self.cli("call", "reminders.lists", "--request-id", identifier)
         self.assertEqual(code, 3)
         self.assertEqual(output["request_id"], identifier)
 
