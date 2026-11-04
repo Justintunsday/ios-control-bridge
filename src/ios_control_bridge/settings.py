@@ -1,24 +1,29 @@
-"""Read and write a supported system setting, with a device readback boundary."""
+"""Read and write supported settings, with a device readback boundary."""
 from pathlib import Path
 import json
 import math
 import os
 import subprocess
 
+from . import ellekit_bridge
 from .device import ios_version
 from .result import EXIT_CODES, result
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SCHEMA = "ios-control-bridge.settings.v1"
+NATIVE_SETTINGS = ("volume", "brightness")
+BOOLEAN_SETTINGS = ("low_power", "orientation_lock")
+SUPPORTED_SETTINGS = NATIVE_SETTINGS + BOOLEAN_SETTINGS
 SETTING_SOURCES = {
     "volume": "AVSystemController",
     "brightness": "BrightnessSystemClient",
+    "low_power": "ellekit.springboard",
+    "orientation_lock": "ellekit.springboard",
 }
 SETTING_TOLERANCES = {
     "volume": 0.001,
     "brightness": 0.005,
 }
-SUPPORTED_SETTINGS = ("volume", "brightness")
 VERIFIED_BUILD = ("16.1.1", "20B101")
 HELPER_TIMEOUT_SECONDS = 10
 
@@ -28,20 +33,32 @@ def helper_path():
     return Path(configured).expanduser() if configured else PROJECT_ROOT / "build/native/icb-settings"
 
 
+def available_settings():
+    settings = []
+    if helper_path().is_file():
+        settings.extend(NATIVE_SETTINGS)
+    if ellekit_bridge.available():
+        settings.extend(BOOLEAN_SETTINGS)
+    return settings
+
+
 def _unsupported_setting(operation, setting, request_id):
     return result(operation, "unavailable", reason="unsupported_setting",
-                  data={"setting": setting, "supported_settings": list(SUPPORTED_SETTINGS)},
+                  data={"setting": setting, "supported_settings": list(SUPPORTED_SETTINGS),
+                        "available_settings": available_settings()},
                   request_id=request_id)
 
 
-def _runtime_gate(operation, request_id):
+def _runtime_gate(operation, setting, request_id):
     version = ios_version()
     if version is None:
         return result(operation, "unavailable", reason="not_ios", request_id=request_id)
     if (version.get("ProductVersion"), version.get("ProductBuildVersion")) != VERIFIED_BUILD:
         return result(operation, "unavailable", reason="unverified_os_build", request_id=request_id)
-    if not helper_path().is_file():
+    if setting in NATIVE_SETTINGS and not helper_path().is_file():
         return result(operation, "unavailable", reason="native_helper_missing", request_id=request_id)
+    if setting in BOOLEAN_SETTINGS and not ellekit_bridge.available():
+        return result(operation, "unavailable", reason="ellekit_bridge_unavailable", request_id=request_id)
     return None
 
 
@@ -76,19 +93,30 @@ def _invoke(arguments, operation, request_id, expected_source):
     return payload, None
 
 
-def _get(params, request_id):
-    operation = "settings.get"
-    extra = set(params) - {"setting"}
-    if extra:
-        return result(operation, "error", reason="unknown_parameters", request_id=request_id)
-    setting = params.get("setting")
-    if not isinstance(setting, str):
-        return result(operation, "error", reason="invalid_setting", request_id=request_id)
-    if setting not in SUPPORTED_SETTINGS:
-        return _unsupported_setting(operation, setting, request_id)
-    gate = _runtime_gate(operation, request_id)
-    if gate:
-        return gate
+def _bridge_failure(operation, bridge_result, request_id):
+    status = bridge_result.get("status")
+    mapped = {"ok": "verified", "unavailable": "unavailable", "error": "error"}.get(status)
+    if mapped is None:
+        return result(operation, "error", reason="native_status_invalid", request_id=request_id)
+    return result(operation, mapped, reason=bridge_result.get("detail") or "bridge_failure",
+                  data={"bridge": bridge_result}, request_id=request_id)
+
+
+def _bridge_get(operation, setting, request_id):
+    bridge_result = ellekit_bridge.request("get_" + setting)
+    if bridge_result.get("status") != "ok":
+        return _bridge_failure(operation, bridge_result, request_id)
+    value = bridge_result.get("value")
+    if value not in (0, 1):
+        return result(operation, "error", reason="native_value_invalid", request_id=request_id)
+    return result(operation, "verified", request_id=request_id, complete=True,
+                  data={"setting": setting, "value": bool(value),
+                        "detail": bridge_result.get("detail", ""),
+                        "source": SETTING_SOURCES[setting]},
+                  source=SETTING_SOURCES[setting])
+
+
+def _native_get(operation, setting, request_id):
     payload, failure = _invoke(["get", setting], operation, request_id, SETTING_SOURCES[setting])
     if failure:
         return failure
@@ -102,9 +130,9 @@ def _get(params, request_id):
                   request_id=request_id, complete=True)
 
 
-def _set(params, request_id):
-    operation = "settings.set"
-    extra = set(params) - {"setting", "value"}
+def _get(params, request_id):
+    operation = "settings.get"
+    extra = set(params) - {"setting"}
     if extra:
         return result(operation, "error", reason="unknown_parameters", request_id=request_id)
     setting = params.get("setting")
@@ -112,14 +140,15 @@ def _set(params, request_id):
         return result(operation, "error", reason="invalid_setting", request_id=request_id)
     if setting not in SUPPORTED_SETTINGS:
         return _unsupported_setting(operation, setting, request_id)
-    if "value" not in params:
-        return result(operation, "error", reason="missing_value", request_id=request_id)
-    value = params["value"]
-    if not _number(value) or not 0.0 <= value <= 1.0:
-        return result(operation, "error", reason="invalid_value", request_id=request_id)
-    gate = _runtime_gate(operation, request_id)
+    gate = _runtime_gate(operation, setting, request_id)
     if gate:
         return gate
+    if setting in BOOLEAN_SETTINGS:
+        return _bridge_get(operation, setting, request_id)
+    return _native_get(operation, setting, request_id)
+
+
+def _native_set(operation, setting, value, request_id):
     payload, failure = _invoke(["set", setting, format(float(value), ".9f")], operation,
                                request_id, SETTING_SOURCES[setting])
     if failure:
@@ -139,6 +168,54 @@ def _set(params, request_id):
                       request_id=request_id, complete=False)
     return result(operation, "verified", data=payload, source=SETTING_SOURCES[setting],
                   request_id=request_id, complete=True)
+
+
+def _bridge_set(operation, setting, value, request_id):
+    before = ellekit_bridge.request("get_" + setting)
+    if before.get("status") != "ok" or before.get("value") not in (0, 1):
+        return _bridge_failure(operation, before, request_id)
+    command = ellekit_bridge.request("set_" + setting, 1 if value else 0)
+    if command.get("status") != "ok":
+        return _bridge_failure(operation, command, request_id)
+    readback = ellekit_bridge.request("get_" + setting)
+    if readback.get("status") != "ok" or readback.get("value") not in (0, 1):
+        return _bridge_failure(operation, readback, request_id)
+    requested = bool(value)
+    actual = bool(readback["value"])
+    data = {"setting": setting, "before": bool(before["value"]), "requested": requested,
+            "readback": actual, "detail": readback.get("detail", ""),
+            "source": SETTING_SOURCES[setting]}
+    if actual != requested:
+        return result(operation, "partial", data=data, reason="readback_mismatch",
+                      request_id=request_id, complete=False)
+    return result(operation, "verified", data=data, source=SETTING_SOURCES[setting],
+                  request_id=request_id, complete=True)
+
+
+def _set(params, request_id):
+    operation = "settings.set"
+    extra = set(params) - {"setting", "value"}
+    if extra:
+        return result(operation, "error", reason="unknown_parameters", request_id=request_id)
+    setting = params.get("setting")
+    if not isinstance(setting, str):
+        return result(operation, "error", reason="invalid_setting", request_id=request_id)
+    if setting not in SUPPORTED_SETTINGS:
+        return _unsupported_setting(operation, setting, request_id)
+    if "value" not in params:
+        return result(operation, "error", reason="missing_value", request_id=request_id)
+    value = params["value"]
+    if setting in BOOLEAN_SETTINGS:
+        if type(value) is not bool:
+            return result(operation, "error", reason="invalid_value", request_id=request_id)
+    elif not _number(value) or not 0.0 <= value <= 1.0:
+        return result(operation, "error", reason="invalid_value", request_id=request_id)
+    gate = _runtime_gate(operation, setting, request_id)
+    if gate:
+        return gate
+    if setting in BOOLEAN_SETTINGS:
+        return _bridge_set(operation, setting, value, request_id)
+    return _native_set(operation, setting, value, request_id)
 
 
 def get_setting(params, request_id=None):

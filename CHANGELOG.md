@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — ElleKit SpringBoard bridge
+
+- Add optional ElleKit tweak `native/ellekit/SpringBridge.m` for settings that require SpringBoard context.
+- Implement `low_power` and `orientation_lock` in `settings.get` / `settings.set` through a fixed command/result file protocol.
+- Add read-only bridge actions for Wi-Fi/airplane state; they are not exposed as writable settings.
+- Add `tools/build_ellekit_bridge.py` to build, sign, install and optionally respring; keep the bridge outside the Debian package.
+- Device acceptance on iPhone SE 2 / iOS 16.1.1 / 20B101: low_power and orientation_lock get/set/readback/restore; 69 Python tests pass.
+- Document the bridge architecture and security boundary; update README, service scope, architecture, verification, skill and handoff.
+
 ## 0.5.0 — Files, browser, weather and activity watching
 
 - Add bounded `files.list` / `files.search` / `files.read` adapters with explicit paths and truncation flags.

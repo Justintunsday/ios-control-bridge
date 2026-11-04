@@ -77,7 +77,8 @@ class SettingsBoundaryTests(unittest.TestCase):
             output = get_setting({"setting": "wifi"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "unsupported_setting")
-        self.assertEqual(output["data"]["supported_settings"], ["volume", "brightness"])
+        self.assertEqual(output["data"]["supported_settings"],
+                         ["volume", "brightness", "low_power", "orientation_lock"])
 
     def test_unknown_parameters_are_rejected_before_helper(self):
         with patch("ios_control_bridge.settings.subprocess.run",
@@ -146,6 +147,56 @@ class SettingsBoundaryTests(unittest.TestCase):
             output = get_setting({"setting": "volume"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "native_process_timeout")
+
+
+class BooleanSettingsTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.binary = Path(self.temp.name) / "icb-settings"
+        self.binary.touch()
+        self.version = patch("ios_control_bridge.settings.ios_version", return_value=VERSION)
+        self.helper = patch("ios_control_bridge.settings.helper_path", return_value=self.binary)
+        self.version.start()
+        self.helper.start()
+        self.addCleanup(self.version.stop)
+        self.addCleanup(self.helper.stop)
+        self.addCleanup(self.temp.cleanup)
+
+    def test_low_power_get_and_set_are_readback_verified(self):
+        responses = [
+            {"status": "ok", "value": 0, "detail": "power_mode=0"},
+            {"status": "ok", "value": 0, "detail": "power_mode=0"},
+            {"status": "ok", "value": 1, "detail": "power_mode=1"},
+            {"status": "ok", "value": 1, "detail": "power_mode=1"},
+        ]
+        with patch("ios_control_bridge.settings.ellekit_bridge.available", return_value=True),              patch("ios_control_bridge.settings.ellekit_bridge.request", side_effect=responses) as call:
+            queried = get_setting({"setting": "low_power"})
+            changed = set_setting({"setting": "low_power", "value": True})
+        self.assertEqual(queried["status"], "verified")
+        self.assertFalse(queried["data"]["value"])
+        self.assertEqual(changed["status"], "verified")
+        self.assertEqual(changed["data"]["before"], False)
+        self.assertEqual(changed["data"]["readback"], True)
+        self.assertEqual([item.args[0] for item in call.call_args_list],
+                         ["get_low_power", "get_low_power", "set_low_power", "get_low_power"])
+
+    def test_boolean_value_must_be_a_bool(self):
+        for value in (1, 0, "true", None):
+            output = set_setting({"setting": "orientation_lock", "value": value})
+            self.assertEqual(output["reason"], "invalid_value", repr(value))
+
+    def test_boolean_bridge_unavailable(self):
+        with patch("ios_control_bridge.settings.ellekit_bridge.available", return_value=False):
+            output = get_setting({"setting": "low_power"})
+        self.assertEqual(output["status"], "unavailable")
+        self.assertEqual(output["reason"], "ellekit_bridge_unavailable")
+
+    def test_boolean_bridge_timeout(self):
+        with patch("ios_control_bridge.settings.ellekit_bridge.available", return_value=True),              patch("ios_control_bridge.settings.ellekit_bridge.request",
+                   return_value={"status": "unavailable", "detail": "bridge_timeout"}):
+            output = get_setting({"setting": "orientation_lock"})
+        self.assertEqual(output["status"], "unavailable")
+        self.assertEqual(output["reason"], "bridge_timeout")
 
 
 if __name__ == "__main__":

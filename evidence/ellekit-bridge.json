@@ -1,0 +1,57 @@
+{
+  "schema": "ios-control-bridge.evidence.ellekit-bridge.v1",
+  "project_version": "0.6.0",
+  "captured_at": "2026-11-04T21:24:00+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless",
+    "ellekit": "1.2"
+  },
+  "component": {
+    "source": "native/ellekit/SpringBridge.m",
+    "plist": "native/ellekit/icbridge.plist",
+    "dylib_path": "/var/jb/usr/lib/TweakInject/icbridge.dylib",
+    "dylib_sha256": "bbf51e1b20d0ef9245af466b1fa7b95ebb35ba2ec81337b083f22f8449b4c6ee",
+    "dylib_bytes": 51552,
+    "filter": "com.apple.springboard",
+    "protocol": "line-based fixed command/result files under /var/jb/var/lib/icb"
+  },
+  "settings_integration": {
+    "supported_settings": ["volume", "brightness", "low_power", "orientation_lock"],
+    "available_settings_on_device": ["volume", "brightness", "low_power", "orientation_lock"],
+    "sources": {
+      "low_power": "ellekit.springboard",
+      "orientation_lock": "ellekit.springboard"
+    }
+  },
+  "acceptance": [
+    {"operation": "settings.get low_power", "status": "verified", "value": false},
+    {"operation": "settings.set low_power true", "status": "verified", "before": false,
+     "requested": true, "readback": true},
+    {"operation": "settings.get low_power", "status": "verified", "value": true},
+    {"operation": "settings.set low_power false", "status": "verified", "before": true,
+     "requested": false, "readback": false},
+    {"operation": "settings.get orientation_lock", "status": "verified", "value": false},
+    {"operation": "settings.set orientation_lock true", "status": "verified", "before": false,
+     "requested": true, "readback": true},
+    {"operation": "settings.get orientation_lock", "status": "verified", "value": true},
+    {"operation": "settings.set orientation_lock false", "status": "verified", "before": true,
+     "requested": false, "readback": false},
+    {"operation": "bridge get_wifi", "status": "ok", "value": 1, "detail": "enabled=1 associated=1"},
+    {"operation": "bridge get_airplane", "status": "ok", "value": 0, "detail": "airplaneMode=0"}
+  ],
+  "restoration": {
+    "low_power_final": false,
+    "orientation_lock_final": false,
+    "restored": true
+  },
+  "tests": {"python_unit": 69, "local": "PASS", "device": "PASS"},
+  "notes": [
+    "Only low_power and orientation_lock were toggled; both were restored in the same run.",
+    "Wi-Fi and airplane mode were read only; no network state was changed.",
+    "A temporary probe tweak that called Foundation from its constructor crashed SpringBoard and triggered ElleKit safe mode; the final bridge avoids that pattern and the probe was removed."
+  ]
+}

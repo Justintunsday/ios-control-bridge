@@ -5,7 +5,7 @@
 | 服务 | 操作 | 完成条件 |
 | --- | --- | --- |
 | device | `info` | 当前 OS / build、型号、UID 与 bootstrap 证据来自设备 |
-| settings | `get`, `set` | 每个设置项分别声明支持版本、值类型和权限；修改后读回；不支持的项目明确报告。媒体音量（`volume`，取值 0.0-1.0，`Audio/Video` 类别）与屏幕亮度（`brightness`，取值 0.0-1.0，DisplayBrightness）已实现并真机验证 |
+| settings | `get`, `set` | 每个设置项分别声明支持版本、值类型和权限；修改后读回；不支持的项目明确报告。媒体音量（`volume`）、屏幕亮度（`brightness`）、低电量模式（`low_power`，布尔）与方向锁定（`orientation_lock`，布尔）已实现并真机验证；后两项通过可选 ElleKit SpringBoard bridge |
 | alarms | `list`, `create`, `update`, `set_enabled`, `delete` | 返回系统时钟真实闹钟的稳定 ID；时间、时区、重复和启停可读回；测试样本可清理 |
 | reminders | `lists`, `list`, `create`, `update`, `complete`, `delete` | 基于明确清单和条目 ID 读取、写入并读回，保留授权状态和分页 / 范围限制 |
 | browser | `search`, `read`, `open` | 搜索有真实结果及 URL（DuckDuckGo HTML，空结果时回退 Bing HTML）；读取有最终 URL、提取时间和截断标志；打开页面通过 LaunchServices 执行并报告实际层级 |
@@ -15,7 +15,7 @@
 
 ## 设置和功能按钮
 
-媒体音量与屏幕亮度已实现并完成 getter、值校验、setter、读回和恢复验证。低电量模式、Wi-Fi、蓝牙、蜂窝网络、飞行模式、屏幕方向锁定与专注模式仍为候选，不是已支持列表。按设置逐项完成同样的读写回环和兼容性验证；不使用一条通用任意 shell 命令替代服务接口。
+媒体音量、屏幕亮度、低电量模式与方向锁定已实现并完成 getter、值校验、setter、读回和恢复验证。Wi-Fi、蓝牙、蜂窝网络、飞行模式和专注模式仍为候选；Wi-Fi 与飞行模式当前只在 bridge 内部提供只读读取，未作为可写设置暴露。按设置逐项完成同样的读写回环和兼容性验证；不使用一条通用任意 shell 命令替代服务接口。
 
 ## 时间与个人事项
 

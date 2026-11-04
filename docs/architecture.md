@@ -28,6 +28,10 @@
 
 `browser.*` 由 Python HTTP 客户端和 HTML 解析器实现；搜索 provider 为 DuckDuckGo HTML，空结果时回退 Bing HTML；`browser.open` 通过固定原生 helper `icb-open-url` 调用 `LSApplicationWorkspace`。`weather.*` 使用 Open-Meteo HTTP API，保留 provider、时区、单位与 attribution。`files.*` 是纯 Python 有界文件系统接口，只处理显式绝对路径。所有 adapters 都返回统一 result JSON 和退出码。
 
+## 可选 ElleKit SpringBoard bridge
+
+`low_power` 与 `orientation_lock` 依赖 SpringBoard 进程内的私有类（`_PMLowPowerMode`、`SBOrientationLockManager`），CLI 进程无法直接访问。可选 tweak `native/ellekit/SpringBridge.m` 通过 ElleKit 注入 SpringBoard，轮询固定命令文件并把命令派发到主队列执行；只接受固定动作（低电量 get/set、方向锁定 get/set、Wi-Fi/飞行模式只读），没有通用 selector 执行入口。bridge 的运行条件、安装方式和安全边界见 [ELLEKIT_BRIDGE.md](ELLEKIT_BRIDGE.md)。
+
 ## 写操作的实现约束
 
 设置写入已对媒体音量和屏幕亮度实现：固定参数和 0.0-1.0 值范围、明确的设置名、有限超时及修改后的读取验证。原生 helper 返回 before / requested / readback，Python 边界再次校验读回差值；记录读回值和未完成的验证，区分“请求已受理”和“结果已核实”。其他写服务仍处于计划阶段。沿用用户已有授权；不要求用户重复确认已经明确交代的操作。

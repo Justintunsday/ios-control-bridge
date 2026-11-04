@@ -81,3 +81,23 @@
 浏览器 provider 是外部页面，DuckDuckGo 可能返回 202 或空结果；适配器在空结果时回退 Bing，并在 `attempts` 中保留每次尝试。`browser.open` 是真实前台 UI 操作，已明确记录。
 
 系统闹钟、提醒事项、低电量模式、网络开关、专注模式和方向锁定仍未实现；阻塞原因与后续建议见 [完成报告](COMPLETION_REPORT.md)。
+
+## ElleKit SpringBoard bridge 验证（0.6.0，2026-11-04）
+
+`low_power` 与 `orientation_lock` 通过可选 ElleKit tweak 注入 SpringBoard 实现；bridge 源码 `native/ellekit/SpringBridge.m`，构建安装脚本 `tools/build_ellekit_bridge.py`。完整摘要见 [ellekit-bridge.json](../evidence/ellekit-bridge.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| `settings.get {"setting":"low_power"}` | verified，false |
+| `settings.set {"setting":"low_power","value":true}` | verified，before false，readback true |
+| 再次 get | verified，true |
+| 恢复 `value:false` | verified，readback false；最终 get false |
+| `settings.get {"setting":"orientation_lock"}` | verified，false |
+| `settings.set {"setting":"orientation_lock","value":true}` | verified，before false，readback true |
+| 再次 get | verified，true |
+| 恢复 `value:false` | verified，readback false；最终 get false |
+| bridge `get_wifi` | ok，enabled=1 associated=1（只读） |
+| bridge `get_airplane` | ok，airplaneMode=0（只读） |
+| Python 测试 | 69 项通过（设备 Python 3.9.9） |
+
+测试只切换低电量模式与方向锁定并立即恢复；Wi-Fi 与飞行模式未改变。期间曾用一个只用于探测的 tweak 验证注入，其 constructor 调用 Foundation 导致 SpringBoard 崩溃与 ElleKit safe mode；最终 bridge 将 constructor 限制为 C/pthread、把 Objective-C 调用放到主队列后稳定运行，探测 tweak 已删除。

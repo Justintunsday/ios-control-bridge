@@ -10,10 +10,10 @@
 
 ## 已完成和未完成
 
-- 已实现并在迁移后的独立目录验证（0.5.0）：`device.info`、`activities.get` / `activities.watch`、媒体音量与屏幕亮度的 `settings.get` / `settings.set`、`browser.search` / `read` / `open`、`weather.current` / `forecast`、`files.list` / `search` / `read`。
+- 已实现并在迁移后的独立目录验证（0.6.0）：`device.info`、`activities.get` / `activities.watch`、音量/亮度/低电量模式/方向锁定的 `settings.get` / `settings.set`、`browser.search` / `read` / `open`、`weather.current` / `forecast`、`files.list` / `search` / `read`。
 - 原生实时活动读取器支持当前 iOS 16.1.1 / 20B101 上的跨 App 原始正文、Attributes 和状态读取。单次查询不是常驻监听。
 - 统一入口为 `bin/iosctl`，Python 3.9+；接口结果为 JSON，协议在 `schemas/`。
-- 闹钟、提醒事项、其余设置项（低电量、网络开关、专注模式等）及常驻监听仍未实现。注册表中的 planned 操作必须返回 `unavailable/not_implemented`。
+- 闹钟、提醒事项、Wi-Fi/蓝牙/蜂窝/飞行模式/专注模式的可写控制及常驻监听仍未实现。注册表中的 planned 操作必须返回 `unavailable/not_implemented`。低电量模式与方向锁定依赖可选 ElleKit bridge（`native/ellekit`，`tools/build_ellekit_bridge.py`）；未安装 bridge 时这两项返回 `ellekit_bridge_unavailable`。
 - 浏览器 provider、天气 provider、文件边界、活动轮询和剩余阻塞项记录在 `docs/COMPLETION_REPORT.md` 与 `evidence/features-0.5.0.json`。
 - 设置适配器当前支持 `volume`（`AVSystemController`，`Audio/Video` 类别）和 `brightness`（`BrightnessSystemClient`，`DisplayBrightness`），取值均为 0.0-1.0。原生 helper 位于 `native/settings/settings.m`；`browser.open` 的 helper 位于 `native/browser/open_url.m`；`tools/build_native.py` 一次构建 `build/native/icb-activities`、`icb-settings` 和 `icb-open-url`。
 - 当前测试为 62 项 Python 测试（0.5.0），并在真机验证文件、浏览器、天气与活动监测；迁移期 18 项测试与 8 项手机检查的证据仍在 [migration-summary.json](evidence/migration-summary.json)。
@@ -29,6 +29,7 @@
 | `native/activities/main.swift` | 入口、版本检查、超时、Swift 对象反射、队列访问和 JSON 输出 |
 | `native/settings/settings.m` | 媒体音量与屏幕亮度 getter / setter、参数校验、读回验证与 JSON 输出 |
 | `native/browser/open_url.m` | 通过 `LSApplicationWorkspace` 打开显式 HTTP(S) URL |
+| `native/ellekit/SpringBridge.m` | 可选 ElleKit SpringBoard bridge：低电量/方向锁定读写，Wi-Fi/飞行模式只读 |
 | `tools/build_native.py` | 使用已有 SDK、clang、Swift 和 ldid 构建 arm64 helper |
 | `skills/ios-control-bridge` | 可移植 AI 技能，不绑定某个模型或对话服务 |
 
@@ -59,12 +60,14 @@ python3 bin/iosctl call activities.get --params '{"activity_id":"实际活动 UU
 python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 python3 bin/iosctl call settings.set --params '{"setting":"volume","value":0.3}'
 python3 bin/iosctl call settings.get --params '{"setting":"brightness"}'
+python3 bin/iosctl call settings.get --params '{"setting":"low_power"}'
+python3 bin/iosctl call settings.set --params '{"setting":"orientation_lock","value":true}'
 python3 bin/iosctl call files.list --params '{"path":"/var/jb/var/root/ios-control-bridge","limit":5}'
 python3 bin/iosctl call browser.search --params '{"query":"iPhone terminal","limit":3}'
 python3 bin/iosctl call weather.current --params '{"latitude":52.52,"longitude":13.41}'
 ```
 
-现有手机源码目录为 `/var/jb/var/root/ios-control-bridge`。原生 helper 位于 `build/native/icb-activities`、`icb-settings` 和 `icb-open-url`。Windows 开发目录为 `C:\ios-control-bridge`。上一次中断发生在最终文档 / Git 元数据同步前：手机上的编译源码和 CLI 已通过验证，但不要假定它已经是完整的远端 Git 克隆；接手时核对实际文件与提交。
+现有手机源码目录为 `/var/jb/var/root/ios-control-bridge`。原生 helper 位于 `build/native/icb-activities`、`icb-settings` 和 `icb-open-url`；可选 ElleKit bridge 位于 `/var/jb/usr/lib/TweakInject/icbridge.dylib`。Windows 开发目录为 `C:\ios-control-bridge`。上一次中断发生在最终文档 / Git 元数据同步前：手机上的编译源码和 CLI 已通过验证，但不要假定它已经是完整的远端 Git 克隆；接手时核对实际文件与提交。
 
 设备地址、SSH 凭据、完整日志、真实条目 UUID 和临时迁移脚本保留在仓库外，不向模型提供密码，也不提交到公开仓库。没有设备连接时可完成本地测试和代码工作，真机步骤应报告待验证。
 

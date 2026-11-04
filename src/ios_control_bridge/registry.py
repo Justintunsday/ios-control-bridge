@@ -7,8 +7,8 @@ from .activities import (get_activity, helper_path as activities_helper_path,
 from .browser import open_helper_path as browser_open_helper_path
 from .device import device_info, ios_version
 from .result import result
-from .settings import (SUPPORTED_SETTINGS, get_setting, helper_path as settings_helper_path,
-                       set_setting)
+from .settings import (SUPPORTED_SETTINGS, available_settings, get_setting,
+                       helper_path as settings_helper_path, set_setting)
 
 
 @dataclass(frozen=True)
@@ -24,8 +24,8 @@ OPERATIONS = [
     Operation("device.info", "Read OS build, model, UID and bootstrap evidence", implemented=True, validation="device_verified"),
     Operation("activities.get", "Read a selected Live Activity's raw content and state", implemented=True, validation="device_verified"),
     Operation("activities.watch", "Monitor activity changes until an explicit stop condition", implemented=True, validation="device_verified"),
-    Operation("settings.get", "Read a supported setting (volume or brightness)", implemented=True, validation="device_verified"),
-    Operation("settings.set", "Change a supported setting and verify the readback (volume or brightness)", mutates=True, implemented=True, validation="device_verified"),
+    Operation("settings.get", "Read a supported setting (volume, brightness, low_power, orientation_lock)", implemented=True, validation="device_verified"),
+    Operation("settings.set", "Change a supported setting and verify the readback (volume, brightness, low_power, orientation_lock)", mutates=True, implemented=True, validation="device_verified"),
     Operation("alarms.list", "Read system alarms"),
     Operation("alarms.create", "Create an alarm with explicit time, timezone and repetition", mutates=True),
     Operation("alarms.update", "Modify one alarm by stable ID", mutates=True),
@@ -56,8 +56,8 @@ def _settings_readiness(version):
         return False, "not_ios"
     if (version.get("ProductVersion"), version.get("ProductBuildVersion")) != SETTINGS_BUILD:
         return False, "unverified_os_build"
-    if not settings_helper_path().is_file():
-        return False, "native_helper_missing"
+    if not settings_helper_path().is_file() and not available_settings():
+        return False, "adapters_missing"
     return True, None
 
 
@@ -92,6 +92,7 @@ def catalog(service=None):
         row["runtime"] = {"ready_to_query": ready, "reason": reason}
         if operation.name.startswith("settings."):
             row["supported_settings"] = list(SUPPORTED_SETTINGS)
+            row["available_settings"] = available_settings()
         if operation.validation == "device_verified":
             row["verified_builds"] = ["20B101"]
         rows.append(row)

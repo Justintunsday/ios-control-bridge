@@ -124,3 +124,17 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 ## 7. 结论
 
 `0.5.0` 在原有设备信息、实时活动读取、音量与亮度设置之上，完成了文件、浏览器、天气和活动监测四类能力，并在 iPhone SE 2 / iOS 16.1.1 上完成真机验收。除闹钟、提醒事项和其余高风险/无可用接口的设置项外，当前路线图中的常规服务均已具备可执行的固定接口；未完成项已明确记录阻塞原因，没有以模拟成功或未验证写入替代。
+
+## 8. 0.6.0 补充：ElleKit SpringBoard bridge
+
+对于 CLI 无法直接控制的 `low_power` 与 `orientation_lock`，新增可选 ElleKit tweak `native/ellekit/SpringBridge.m`：
+
+- 注入 `com.apple.springboard`，以固定命令/结果文件协议接收动作；
+- 低电量通过 `_PMLowPowerMode` 的 `getPowerMode` / `setPowerMode:fromSource:`；
+- 方向锁定通过 `SBOrientationLockManager` 的 `isUserLocked` / `lock` / `unlock`；
+- 额外提供 Wi-Fi / 飞行模式只读状态（未暴露为可写设置，避免断开网络）；
+- CLI `settings.get/set` 已把这两项纳入 `supported_settings` 与 `available_settings`。
+
+设备结果：低电量 false → true → true → false；方向锁定 false → true → true → false；均在同一轮恢复。测试 69 项通过。安装与安全边界见 `docs/ELLEKIT_BRIDGE.md`，证据见 `evidence/ellekit-bridge.json`。
+
+仍未完成：系统闹钟、提醒事项、Wi-Fi/蓝牙/蜂窝/飞行模式/专注模式的可写控制。前两者需要各自的目标进程与授权路径；网络开关的写入需要用户明确的断网测试窗口，当前只保留只读能力。
