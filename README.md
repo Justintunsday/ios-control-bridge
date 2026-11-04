@@ -84,3 +84,5 @@ python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 - OpenCode skill/插件名：`ios-control-bridge`
 - Skill 说明：`skills/ios-control-bridge/README.md`
 - 已验证设备：iPhone12,8 / iOS 16.1.1 / 20B101 / Dopamine rootless
+- Sileo 私有 API 包：`com.opencode.sbsnapshot` → `iOS Control Bridge - Private API Snapshot` 0.5
+- 私有 API 插件说明：[docs/PRIVATE_API_PLUGIN.md](docs/PRIVATE_API_PLUGIN.md)
