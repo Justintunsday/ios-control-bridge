@@ -33,6 +33,10 @@ Live Activities 专指锁屏 / 灵动岛活动，按 [live-activities.md](refere
 
 语音转写作为普通用户输入，按 [voice-intents.md](references/voice-intents.md) 消除关键歧义。本技能不自行提供语音识别、朗读或后台服务。
 
+## OpenCode / DeepSeek API 失效
+
+移动端 OpenCode 报 `Authentication Fails`、`DEEPSEEK_API_KEY is not set` 或 `provider.auth` 时，先读 [deepseek-api.md](references/deepseek-api.md)。优先区分官方 `deepseek/deepseek-flash` 与 `opencode/*-free` 免费网关；再比较报错中的 key 尾号与当前 key 尾号，判断是 App/server 缓存旧凭据还是 key 本身失效。修改 key 后必须重启 server 并强制重开 App；不要在技能、日志或输出中记录完整 key。
+
 ## 验证与维护
 
 离线行为场景见 [evaluation.md](references/evaluation.md)。终端探测可运行 `scripts/probe_ios.sh`，自测为 `scripts/test_probe.py`。它们只提供环境和查询方法，不代表服务控制接口已经实现。
