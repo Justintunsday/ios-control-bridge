@@ -170,3 +170,21 @@ TCC/EventKit 对路径敏感：同一 helper 位于 `/var/jb/usr/local/bin/icb-c
 | Python 测试 | 97 项通过 |
 
 事件 ID 使用 EventKit 的 event identifier，并非 UUID；适配器按有界字符串校验并精确删除。测试日历与事件均已清理。
+
+## 提醒事项验证（0.11.0，2026-11-04）
+
+用户新建提醒后，EventKit 仍返回 `lists=0`；改用私有 ReminderKit 后读取成功。摘要见 [reminders.json](../evidence/reminders.json)。
+
+| 检查 | 结果 |
+| --- | --- |
+| `reminders.lists` | verified，1 个清单 “Reminders” |
+| `reminders.list` | verified，读到用户自己创建的提醒 |
+| `reminders.create` “ICB Reminder Acceptance” | verified |
+| 创建后 `reminders.list` | verified，能找到测试提醒 |
+| `reminders.update` 改名 | verified |
+| `reminders.complete` | verified |
+| `reminders.delete` | verified |
+| 最终 `reminders.list` | verified，测试提醒不存在，用户的提醒仍在 |
+| Python 测试 | 106 项通过 |
+
+测试提醒已清理；用户的 “test” 提醒只读，未修改。

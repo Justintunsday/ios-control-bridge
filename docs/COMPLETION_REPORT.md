@@ -170,3 +170,11 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 - 真机创建测试日历与 2026-11-05 10:00–11:00Z 测试事件，查询命中、删除事件、删除日历，最终日历数量恢复到 9。
 - 事件 ID 为 EventKit identifier（非 UUID），Python 适配器按有界字符串校验；时间范围显式要求 ISO-8601。
 - 97 项 Python 测试通过；证据：`evidence/calendar-events.json`。
+
+## 13. 0.11.0 补充：提醒事项（私有 ReminderKit）
+
+- 用户创建提醒后，EventKit 仍返回 0 个提醒清单；改用私有 ReminderKit `REMStore` 成功读取账户和 “Reminders” 清单。
+- 新增 helper `native/reminders/RemindersBridge.m`，实现 `reminders.lists/list/create/update/complete/delete`，使用 `REMSaveRequest` 完成写操作并读回。
+- 真机：读取用户自己的提醒；创建测试提醒 “ICB Reminder Acceptance”，改名、完成、删除；最终清单数量回到 1，用户提醒未被修改。
+- 106 项 Python 测试通过；native build 现在生成 6 个 helper。
+- 证据：`evidence/reminders.json`。

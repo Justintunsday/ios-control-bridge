@@ -12,7 +12,7 @@
 | 实时活动 | 跨 App 正文、Attributes、状态和变化监测 | 按 ID 读取与有界轮询监测已实现；常驻监测待开发 |
 | 设置 / 控制中心 | Wi-Fi、蓝牙、蜂窝、飞行模式、亮度、音量、低电量、方向锁定、专注模式等的读取与调整 | 媒体音量、屏幕亮度、低电量模式、方向锁定已实现并真机验证；Wi-Fi、飞行模式、蓝牙为只读；低电量/方向锁定/只读状态通过可选 ElleKit SpringBoard bridge；其他设置项待实现 |
 | 闹钟 | 系统闹钟列表、创建、改时、重复、启停和删除 | 列表、创建、改时/标签、启停和删除已实现并真机验证（私有 MobileTimer 框架 + mobiletimerd entitlement） |
-| 提醒事项 | 清单、查询、新建、编辑、完成和删除 | 待实现；EventKit 授权可用，但设备没有提醒账户/默认清单，创建不持久 |
+| 提醒事项 | 清单、查询、新建、编辑、完成和删除 | 已实现并真机验证；使用私有 ReminderKit `REMStore`（EventKit 在该设备返回 0 个清单） |
 | 日历 | 日历列表、新建日历、删除指定日历；日历事件查询、新建、删除 | 日历与事件操作已实现并真机验证（私有 EventKit + TCC entitlement） |
 | 浏览器 / 网络查询 | 搜索结果、网页内容提取、打开指定页面 | 搜索、正文提取与 LaunchServices 打开已实现并真机验证 |
 | 天气 | 指定位置的实况、预报、来源及数据时间 | Open-Meteo 实况与预报已实现并真机验证 |
@@ -56,7 +56,7 @@ python3 bin/iosctl call activities.get \
 python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 ```
 
-默认 helper 路径为仓库内 `build/native/icb-activities`、`build/native/icb-settings`、`build/native/icb-open-url`、`build/native/icb-alarms` 和 `build/native/icb-calendar`。需要显式指定已有 helper 时，使用 `ICB_ACTIVITIES_HELPER`、`ICB_SETTINGS_HELPER`、`ICB_OPEN_URL_HELPER`、`ICB_ALARMS_HELPER`、`ICB_CALENDAR_HELPER`；SDK 可通过 `ICB_SDK` 配置。日历 helper 必须额外安装到 `/var/jb/usr/local/bin/icb-calendar`（TCC/EventKit 对路径敏感），见 [完成报告](docs/COMPLETION_REPORT.md) 与 [设备验证记录](docs/verification.md)。低电量模式与方向锁定需要额外安装可选 ElleKit SpringBoard bridge：`sudo python3 tools/build_ellekit_bridge.py --respring`；详见 [ElleKit bridge](docs/ELLEKIT_BRIDGE.md)。仓库不保存设备地址、密码或 SSH 私钥。
+默认 helper 路径为仓库内 `build/native/icb-activities`、`build/native/icb-settings`、`build/native/icb-open-url`、`build/native/icb-alarms`、`build/native/icb-calendar`、`build/native/icb-reminders`。需要显式指定已有 helper 时，使用 `ICB_ACTIVITIES_HELPER`、`ICB_SETTINGS_HELPER`、`ICB_OPEN_URL_HELPER`、`ICB_ALARMS_HELPER`、`ICB_CALENDAR_HELPER`、`ICB_REMINDERS_HELPER`；SDK 可通过 `ICB_SDK` 配置。日历与提醒 helper 还需安装到 `/var/jb/usr/local/bin/`（`icb-calendar`、`icb-reminders`，TCC/私有框架对路径敏感），见 [完成报告](docs/COMPLETION_REPORT.md) 与 [设备验证记录](docs/verification.md)。低电量模式与方向锁定需要额外安装可选 ElleKit SpringBoard bridge：`sudo python3 tools/build_ellekit_bridge.py --respring`；详见 [ElleKit bridge](docs/ELLEKIT_BRIDGE.md)。仓库不保存设备地址、密码或 SSH 私钥。
 
 ## 结果和开发
 

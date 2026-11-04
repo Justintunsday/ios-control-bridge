@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 — Reminders through private ReminderKit
+
+- Add `native/reminders/RemindersBridge.m` using ReminderKit `REMStore` and `REMSaveRequest`.
+- Implement `reminders.lists`, `reminders.list`, `reminders.create`, `reminders.update`, `reminders.complete` and `reminders.delete`.
+- Explain why EventKit is insufficient: authorization=3 but zero reminder calendars; REMStore exposes the account and list.
+- Device acceptance: read the user's reminder, then create/update/complete/delete a test reminder; final list returned to baseline and the user's reminder was untouched.
+- 106 Python tests pass; native build now produces six helpers.
+
 ## 0.10.0 — Calendar events
 
 - Extend the EventKit calendar helper with `calendar.events`, `calendar.event_create` and `calendar.event_delete`.

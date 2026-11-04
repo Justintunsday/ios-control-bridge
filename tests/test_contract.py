@@ -25,18 +25,16 @@ class CLIContractTests(unittest.TestCase):
         self.assertEqual(rows["settings.get"]["supported_settings"],
                          ["volume", "brightness", "low_power", "orientation_lock",
                           "wifi", "airplane", "bluetooth"])
-        for name in ("alarms.list", "calendar.list", "calendar.create"):
+        for name in ("alarms.list", "calendar.list", "calendar.create",
+                     "reminders.lists", "reminders.create", "reminders.complete"):
             self.assertTrue(rows[name]["implemented"])
-        for name in ("reminders.create", "reminders.complete"):
-            self.assertFalse(rows[name]["implemented"])
-            self.assertFalse(rows[name]["runtime"]["ready_to_query"])
+        self.assertFalse(any(not row["implemented"] for row in rows.values()))
 
-    def test_planned_write_cannot_fall_back_to_a_command(self):
+    def test_unknown_operation_never_falls_back_to_a_command(self):
         with patch("subprocess.run", side_effect=AssertionError("unexpected device command")):
-            output = invoke("reminders.create", {"title": "test"})
-        self.assertEqual(output["status"], "unavailable")
-        self.assertEqual(output["reason"], "not_implemented")
-        self.assertFalse(output["complete_for_scope"])
+            output = invoke("reminders.unknown", {"title": "test"})
+        self.assertEqual(output["status"], "error")
+        self.assertEqual(output["reason"], "unknown_operation")
 
     def test_unsupported_setting_does_not_report_success_or_run_helper(self):
         with patch("subprocess.run", side_effect=AssertionError("unexpected device command")):
@@ -63,7 +61,8 @@ class CLIContractTests(unittest.TestCase):
 
     def test_request_id_survives_unavailable_operation(self):
         identifier = "debd4d72-1860-4d98-a3d0-c026ddbd1744"
-        code, output = self.cli("call", "reminders.lists", "--request-id", identifier)
+        code, output = self.cli("call", "settings.get", "--params",
+                                '{"setting":"focus_mode"}', "--request-id", identifier)
         self.assertEqual(code, 3)
         self.assertEqual(output["request_id"], identifier)
 

@@ -1,0 +1,34 @@
+{
+  "schema": "ios-control-bridge.evidence.reminders.v1",
+  "project_version": "0.11.0",
+  "captured_at": "2026-11-04T22:14:00+08:00",
+  "device": {"model": "iPhone12,8", "ios": "16.1.1", "build": "20B101", "bootstrap": "/var/jb"},
+  "component": {
+    "source": "native/reminders/RemindersBridge.m",
+    "framework": "ReminderKit.framework",
+    "store": "REMStore",
+    "helper_installed_path": "/var/jb/usr/local/bin/icb-reminders",
+    "helper_sha256": "feb53da5226bc90c7aada6107ce49b5a2693e75a71857fedcd2e7d77abe7b825",
+    "entitlements": ["platform-application", "com.apple.private.security.no-sandbox",
+                     "com.apple.private.tcc.allow", "com.apple.private.remindd",
+                     "com.apple.security.exception.mach-lookup.global-name"]
+  },
+  "why_reminderkit": "EventKit reported authorization=3 but zero reminder calendars even after refreshSourcesIfNecessary and a 6-second wait. REMStore exposed one account and one list named 'Reminders', so ReminderKit is used instead of EventKit.",
+  "acceptance": [
+    {"operation": "reminders.lists", "status": "verified", "count": 1, "name": "Reminders"},
+    {"operation": "reminders.list", "status": "verified", "user_reminder_found": true},
+    {"operation": "reminders.create", "status": "verified", "title": "ICB Reminder Acceptance"},
+    {"operation": "reminders.list after create", "status": "verified", "created_found": true},
+    {"operation": "reminders.update", "status": "verified", "title": "ICB Reminder Acceptance 2"},
+    {"operation": "reminders.complete", "status": "verified"},
+    {"operation": "reminders.delete", "status": "verified"},
+    {"operation": "reminders.list after cleanup", "status": "verified", "count": 1,
+     "test_absent": true, "user_reminder_still_present": true}
+  ],
+  "notes": [
+    "The user's own reminder named 'test' was read only and left untouched.",
+    "The test reminder was created, updated, completed and deleted; final list count returned to baseline 1.",
+    "ReminderKit object IDs are UUIDs extracted from the private objectID; Python validates UUIDs before invoking the helper."
+  ],
+  "tests": {"python_unit": 106, "local": "PASS", "remote": 106}
+}

@@ -1,7 +1,7 @@
 """Declare project scope separately from implemented and device-verified adapters."""
 from dataclasses import asdict, dataclass
 
-from . import alarms, browser, calendar, files, weather
+from . import alarms, browser, calendar, files, reminders, weather
 from .activities import (get_activity, helper_path as activities_helper_path,
                          watch_activity)
 from .browser import open_helper_path as browser_open_helper_path
@@ -37,12 +37,12 @@ OPERATIONS = [
     Operation("calendar.events", "List events in one calendar and explicit date range", implemented=True, validation="device_verified"),
     Operation("calendar.event_create", "Create an event in one calendar", mutates=True, implemented=True, validation="device_verified"),
     Operation("calendar.event_delete", "Delete one identified event", mutates=True, implemented=True, validation="device_verified"),
-    Operation("reminders.lists", "Read reminder lists"),
-    Operation("reminders.list", "Read reminders within a selected list and time range"),
-    Operation("reminders.create", "Create a reminder with an explicit destination list", mutates=True),
-    Operation("reminders.update", "Modify one reminder by stable ID", mutates=True),
-    Operation("reminders.complete", "Mark one reminder completed or incomplete", mutates=True),
-    Operation("reminders.delete", "Delete one identified reminder", mutates=True),
+    Operation("reminders.lists", "List reminder lists", implemented=True, validation="device_verified"),
+    Operation("reminders.list", "Read reminders in one list", implemented=True, validation="device_verified"),
+    Operation("reminders.create", "Create a reminder in one list", mutates=True, implemented=True, validation="device_verified"),
+    Operation("reminders.update", "Rename one identified reminder", mutates=True, implemented=True, validation="device_verified"),
+    Operation("reminders.complete", "Complete one identified reminder", mutates=True, implemented=True, validation="device_verified"),
+    Operation("reminders.delete", "Delete one identified reminder", mutates=True, implemented=True, validation="device_verified"),
     Operation("browser.search", "Return web search results with titles, links and source timestamps", implemented=True, validation="device_verified"),
     Operation("browser.read", "Read a selected page and report extraction limits", implemented=True, validation="device_verified"),
     Operation("browser.open", "Open a selected HTTP(S) URL on the device", mutates=True, implemented=True, validation="device_verified"),
@@ -100,6 +100,9 @@ def catalog(service=None):
                 ready, reason = False, "native_helper_missing"
         elif operation.name.startswith("calendar."):
             if not calendar.helper_path().is_file():
+                ready, reason = False, "native_helper_missing"
+        elif operation.name.startswith("reminders."):
+            if not reminders.helper_path().is_file():
                 ready, reason = False, "native_helper_missing"
         row["runtime"] = {"ready_to_query": ready, "reason": reason}
         if operation.name.startswith("settings."):
@@ -164,6 +167,18 @@ def invoke(operation, params, request_id=None):
         return calendar.create_event(params, request_id)
     if operation == "calendar.event_delete":
         return calendar.delete_event(params, request_id)
+    if operation == "reminders.lists":
+        return reminders.list_lists(params, request_id)
+    if operation == "reminders.list":
+        return reminders.list_reminders(params, request_id)
+    if operation == "reminders.create":
+        return reminders.create_reminder(params, request_id)
+    if operation == "reminders.update":
+        return reminders.update_reminder(params, request_id)
+    if operation == "reminders.complete":
+        return reminders.complete_reminder(params, request_id)
+    if operation == "reminders.delete":
+        return reminders.delete_reminder(params, request_id)
     if operation == "files.list":
         return files.list_files(params, request_id)
     if operation == "files.search":

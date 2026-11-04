@@ -1,3 +1,3 @@
 """iOS Control Bridge: client-neutral device service adapters."""
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
