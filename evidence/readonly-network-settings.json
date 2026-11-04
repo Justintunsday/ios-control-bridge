@@ -1,0 +1,40 @@
+{
+  "schema": "ios-control-bridge.evidence.readonly-network.v1",
+  "project_version": "0.7.0",
+  "captured_at": "2026-11-04T21:31:10+08:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "bootstrap": "/var/jb",
+    "jailbreak": "Dopamine rootless",
+    "ellekit": "1.2"
+  },
+  "settings": {
+    "supported": ["volume", "brightness", "low_power", "orientation_lock", "wifi", "airplane", "bluetooth"],
+    "available": ["volume", "brightness", "low_power", "orientation_lock", "wifi", "airplane", "bluetooth"],
+    "writable": ["volume", "brightness", "low_power", "orientation_lock"],
+    "read_only": ["wifi", "airplane", "bluetooth"]
+  },
+  "acceptance": [
+    {"operation": "settings.get wifi", "status": "verified", "value": true,
+     "detail": "enabled=1 associated=1"},
+    {"operation": "settings.get airplane", "status": "verified", "value": false,
+     "detail": "airplaneMode=0"},
+    {"operation": "settings.get bluetooth", "status": "verified", "value": false,
+     "detail": "enabled=0"},
+    {"operation": "settings.set wifi true", "status": "unavailable",
+     "reason": "read_only_setting", "note": "no bridge write was sent"},
+    {"operation": "settings.get low_power", "status": "verified", "value": false}
+  ],
+  "write_blockers": {
+    "bluetooth": "BluetoothManager -setEnabled: returned accepted=0 with unchanged state in both CLI helper and SpringBoard bridge contexts",
+    "wifi": "HSWiFiManager exposes setWiFiEnabled:, but disabling Wi-Fi would drop the active SSH transport; no unverified write was performed",
+    "airplane": "RadiosPreferences exposes setAirplaneMode:, but enabling it would drop the active network; no unverified write was performed"
+  },
+  "tests": {"python_unit": 71, "local": "PASS", "device": "PASS"},
+  "notes": [
+    "Only read operations were performed for Wi-Fi, airplane mode and Bluetooth.",
+    "low_power was read only; no writable setting was changed in this acceptance run."
+  ]
+}

@@ -13,12 +13,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 NATIVE_SCHEMA = "ios-control-bridge.settings.v1"
 NATIVE_SETTINGS = ("volume", "brightness")
 BOOLEAN_SETTINGS = ("low_power", "orientation_lock")
-SUPPORTED_SETTINGS = NATIVE_SETTINGS + BOOLEAN_SETTINGS
+READ_ONLY_SETTINGS = ("wifi", "airplane", "bluetooth")
+SUPPORTED_SETTINGS = NATIVE_SETTINGS + BOOLEAN_SETTINGS + READ_ONLY_SETTINGS
 SETTING_SOURCES = {
     "volume": "AVSystemController",
     "brightness": "BrightnessSystemClient",
     "low_power": "ellekit.springboard",
     "orientation_lock": "ellekit.springboard",
+    "wifi": "ellekit.springboard",
+    "airplane": "ellekit.springboard",
+    "bluetooth": "ellekit.springboard",
 }
 SETTING_TOLERANCES = {
     "volume": 0.001,
@@ -39,6 +43,7 @@ def available_settings():
         settings.extend(NATIVE_SETTINGS)
     if ellekit_bridge.available():
         settings.extend(BOOLEAN_SETTINGS)
+        settings.extend(READ_ONLY_SETTINGS)
     return settings
 
 
@@ -57,7 +62,7 @@ def _runtime_gate(operation, setting, request_id):
         return result(operation, "unavailable", reason="unverified_os_build", request_id=request_id)
     if setting in NATIVE_SETTINGS and not helper_path().is_file():
         return result(operation, "unavailable", reason="native_helper_missing", request_id=request_id)
-    if setting in BOOLEAN_SETTINGS and not ellekit_bridge.available():
+    if setting in BOOLEAN_SETTINGS + READ_ONLY_SETTINGS and not ellekit_bridge.available():
         return result(operation, "unavailable", reason="ellekit_bridge_unavailable", request_id=request_id)
     return None
 
@@ -143,7 +148,7 @@ def _get(params, request_id):
     gate = _runtime_gate(operation, setting, request_id)
     if gate:
         return gate
-    if setting in BOOLEAN_SETTINGS:
+    if setting in BOOLEAN_SETTINGS + READ_ONLY_SETTINGS:
         return _bridge_get(operation, setting, request_id)
     return _native_get(operation, setting, request_id)
 
@@ -202,6 +207,11 @@ def _set(params, request_id):
         return result(operation, "error", reason="invalid_setting", request_id=request_id)
     if setting not in SUPPORTED_SETTINGS:
         return _unsupported_setting(operation, setting, request_id)
+    if setting in READ_ONLY_SETTINGS:
+        return result(operation, "unavailable", reason="read_only_setting",
+                      data={"setting": setting,
+                            "detail": "This setting is exposed for reading only; no safe write path is implemented."},
+                      request_id=request_id)
     if "value" not in params:
         return result(operation, "error", reason="missing_value", request_id=request_id)
     value = params["value"]

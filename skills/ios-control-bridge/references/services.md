@@ -9,6 +9,7 @@
 | 观察活动变化 | `activities.watch` / `activity_id`, `duration_ms`, `interval_ms`, `timeout_ms` | 有界前台轮询，不做常驻监听；样本只含状态，不重复正文 |
 | 读取 / 调整音量或亮度 | `settings.get` / `settings.set`，参数 `{"setting":"volume"}` 或 `{"setting":"brightness"}`；写入另带 `"value"`（0.0-1.0） | 当前音量与亮度已实现；写后读回，测试后恢复原值 |
 | 低电量模式 / 方向锁定 | `settings.get` / `settings.set`，参数 `{"setting":"low_power"}` 或 `{"setting":"orientation_lock"}`；写入 `"value"` 为 true/false | 需要可选 ElleKit SpringBoard bridge；写后读回，测试后恢复原值 |
+| Wi-Fi / 飞行模式 / 蓝牙状态 | `settings.get`，参数 `{"setting":"wifi"}` / `airplane` / `bluetooth` | 只读；写入返回 `unavailable/read_only_setting` |
 | 文件 | `files.list` / `files.search` / `files.read`，显式绝对路径 | 结果有界；权限失败与空结果区分；只读指定文件 |
 | 设置闹钟 | `alarms.create` / 明确时间、时区、重复、标签 | 系统闹钟返回真实 ID；时间有歧义时补齐，不推定已创建 |
 | 修改已有闹钟 | `alarms.update` / `alarms.set_enabled` / `alarms.delete` | 用准确 ID；删除或改时不能扩大到全部 |

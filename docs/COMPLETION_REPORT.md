@@ -138,3 +138,11 @@ python3 bin/iosctl call weather.forecast --params '{"latitude":52.52,"longitude"
 设备结果：低电量 false → true → true → false；方向锁定 false → true → true → false；均在同一轮恢复。测试 69 项通过。安装与安全边界见 `docs/ELLEKIT_BRIDGE.md`，证据见 `evidence/ellekit-bridge.json`。
 
 仍未完成：系统闹钟、提醒事项、Wi-Fi/蓝牙/蜂窝/飞行模式/专注模式的可写控制。前两者需要各自的目标进程与授权路径；网络开关的写入需要用户明确的断网测试窗口，当前只保留只读能力。
+
+## 9. 0.7.0 补充：只读网络与蓝牙状态
+
+- 新增只读设置 `wifi`、`airplane`、`bluetooth`；通过 ElleKit bridge 读取 SpringBoard 内状态。
+- 写操作在 CLI 边界返回 `unavailable/read_only_setting`，不会向 bridge 发送写入命令。
+- 设备结果：Wi-Fi true（enabled=1 associated=1）、飞行模式 false、蓝牙 false；低电量读取仍正常；测试 71 项通过。
+- 蓝牙写入未实现：`BluetoothManager -setEnabled:` 在 CLI 和 SpringBoard 上下文都返回未生效；Wi-Fi/飞行模式写入会断开当前 SSH 网络，未做未经验证的写操作。
+- 证据：`evidence/readonly-network-settings.json`；相关说明已同步到 README、服务范围、架构、验证、技能与 HANDOFF。

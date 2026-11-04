@@ -101,3 +101,18 @@
 | Python 测试 | 69 项通过（设备 Python 3.9.9） |
 
 测试只切换低电量模式与方向锁定并立即恢复；Wi-Fi 与飞行模式未改变。期间曾用一个只用于探测的 tweak 验证注入，其 constructor 调用 Foundation 导致 SpringBoard 崩溃与 ElleKit safe mode；最终 bridge 将 constructor 限制为 C/pthread、把 Objective-C 调用放到主队列后稳定运行，探测 tweak 已删除。
+
+## 只读网络/蓝牙状态验证（0.7.0，2026-11-04）
+
+ElleKit bridge 增加 `get_bluetooth`，并把 Wi-Fi、飞行模式、蓝牙作为只读设置暴露。写操作在 CLI 边界直接返回 `read_only_setting`，不会向 bridge 发送命令。
+
+| 检查 | 结果 |
+| --- | --- |
+| `settings.get {"setting":"wifi"}` | verified，true，`enabled=1 associated=1` |
+| `settings.get {"setting":"airplane"}` | verified，false，`airplaneMode=0` |
+| `settings.get {"setting":"bluetooth"}` | verified，false，`enabled=0` |
+| `settings.set {"setting":"wifi","value":true}` | unavailable / read_only_setting，未发送 bridge 写入 |
+| `settings.get {"setting":"low_power"}` | verified，false（原有能力未受影响） |
+| Python 测试 | 71 项通过（设备 Python 3.9.9） |
+
+`BluetoothManager -setEnabled:` 在 CLI helper 与 SpringBoard bridge 中均返回 `accepted=0` 且状态不变，因此未实现蓝牙写入。

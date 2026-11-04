@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 — Read-only network and Bluetooth state
+
+- Add read-only `wifi`, `airplane` and `bluetooth` settings through the ElleKit SpringBoard bridge.
+- Add bridge action `get_bluetooth`; expose Wi-Fi/airplane/Bluetooth state via `settings.get`.
+- Reject writes to read-only settings with `unavailable/read_only_setting` before any bridge command.
+- Device acceptance on iPhone SE 2 / iOS 16.1.1 / 20B101: Wi-Fi enabled/associated, airplane off, Bluetooth off; 71 Python tests pass.
+- Document that BluetoothManager `setEnabled:` returns no effective change in both CLI and SpringBoard contexts.
+
 ## 0.6.0 — ElleKit SpringBoard bridge
 
 - Add optional ElleKit tweak `native/ellekit/SpringBridge.m` for settings that require SpringBoard context.

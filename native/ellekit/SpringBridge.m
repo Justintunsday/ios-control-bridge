@@ -2,6 +2,7 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 #include <dispatch/dispatch.h>
+#include <dlfcn.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,6 +30,7 @@ typedef long long (*LongGetter)(id, SEL);
 typedef BOOL (*BoolGetter)(id, SEL);
 typedef void (*VoidCall)(id, SEL);
 typedef BOOL (*BoolSetter)(id, SEL, long long, id);
+typedef BOOL (*BoolSetterSimple)(id, SEL, BOOL);
 
 typedef struct {
     char id[128];
@@ -127,6 +129,56 @@ static bool execute_wifi_get(char *detail, size_t detail_size, int *value) {
     return true;
 }
 
+static bool execute_bluetooth_get(char *detail, size_t detail_size, int *value) {
+    void *handle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager",
+                          RTLD_LAZY | RTLD_LOCAL);
+    if (!handle) {
+        snprintf(detail, detail_size, "framework_unavailable");
+        return false;
+    }
+    Class cls = objc_getClass("BluetoothManager");
+    if (!cls) {
+        snprintf(detail, detail_size, "class_unavailable");
+        return false;
+    }
+    id manager = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
+    manager = ((id (*)(id, SEL))objc_msgSend)(manager, sel_registerName("init"));
+    if (!manager) {
+        snprintf(detail, detail_size, "init_failed");
+        return false;
+    }
+    BOOL enabled = ((BoolGetter)objc_msgSend)(manager, sel_registerName("enabled"));
+    *value = enabled ? 1 : 0;
+    snprintf(detail, detail_size, "enabled=%d", enabled ? 1 : 0);
+    return true;
+}
+
+static bool execute_bluetooth_set(int value, char *detail, size_t detail_size, int *readback) {
+    void *handle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager",
+                          RTLD_LAZY | RTLD_LOCAL);
+    if (!handle) {
+        snprintf(detail, detail_size, "framework_unavailable");
+        return false;
+    }
+    Class cls = objc_getClass("BluetoothManager");
+    if (!cls) {
+        snprintf(detail, detail_size, "class_unavailable");
+        return false;
+    }
+    id manager = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
+    manager = ((id (*)(id, SEL))objc_msgSend)(manager, sel_registerName("init"));
+    if (!manager) {
+        snprintf(detail, detail_size, "init_failed");
+        return false;
+    }
+    BOOL accepted = ((BoolSetterSimple)objc_msgSend)(manager, sel_registerName("setEnabled:"), value ? YES : NO);
+    usleep(800000);
+    BOOL enabled = ((BoolGetter)objc_msgSend)(manager, sel_registerName("enabled"));
+    *readback = enabled ? 1 : 0;
+    snprintf(detail, detail_size, "accepted=%d enabled=%d", accepted ? 1 : 0, enabled ? 1 : 0);
+    return true;
+}
+
 static bool execute_airplane_get(char *detail, size_t detail_size, int *value) {
     Class cls = objc_getClass("RadiosPreferences");
     if (!cls) {
@@ -171,6 +223,10 @@ static void execute(Command *command) {
         ok = execute_wifi_get(detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "get_airplane") == 0) {
         ok = execute_airplane_get(detail, sizeof(detail), &readback);
+    } else if (strcmp(command->action, "get_bluetooth") == 0) {
+        ok = execute_bluetooth_get(detail, sizeof(detail), &readback);
+    } else if (strcmp(command->action, "set_bluetooth") == 0) {
+        ok = execute_bluetooth_set(command->value, detail, sizeof(detail), &readback);
     } else {
         write_result(command->id, "error", -1, "unsupported_action");
         return;

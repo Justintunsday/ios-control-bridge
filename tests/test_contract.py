@@ -23,7 +23,8 @@ class CLIContractTests(unittest.TestCase):
         for name in ("device.info", "activities.get", "settings.get", "settings.set"):
             self.assertTrue(rows[name]["implemented"])
         self.assertEqual(rows["settings.get"]["supported_settings"],
-                         ["volume", "brightness", "low_power", "orientation_lock"])
+                         ["volume", "brightness", "low_power", "orientation_lock",
+                          "wifi", "airplane", "bluetooth"])
         for name in ("alarms.create", "reminders.create"):
             self.assertFalse(rows[name]["implemented"])
             self.assertFalse(rows[name]["runtime"]["ready_to_query"])
@@ -37,7 +38,7 @@ class CLIContractTests(unittest.TestCase):
 
     def test_unsupported_setting_does_not_report_success_or_run_helper(self):
         with patch("subprocess.run", side_effect=AssertionError("unexpected device command")):
-            output = invoke("settings.set", {"setting": "wifi", "value": False})
+            output = invoke("settings.set", {"setting": "focus_mode", "value": False})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "unsupported_setting")
         self.assertFalse(output["complete_for_scope"])

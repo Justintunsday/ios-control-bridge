@@ -11,7 +11,7 @@
 - 支持的动作固定为：
   - `get_low_power` / `set_low_power`
   - `get_orientation_lock` / `set_orientation_lock`
-  - `get_wifi` / `get_airplane`（只读）
+  - `get_wifi` / `get_airplane` / `get_bluetooth`（只读）
 - Python 侧 `src/ios_control_bridge/ellekit_bridge.py` 负责写入带 request ID 的命令、等待匹配的结果并解析；CLI 的 `settings.get/set` 复用该客户端。
 - CLI 只接受上面列出的固定动作；bridge 没有“执行任意 selector”的入口。
 
@@ -66,7 +66,7 @@ CLI 侧对应结果见 `evidence/ellekit-bridge.json`。测试只改变低电量
 - 命令文件目录 `/var/jb/var/lib/icb` 为 0777：**任何能访问 `/var/jb` 的本地进程都可以发送同样的固定动作**。这是本机越狱环境下的本地控制面，不是网络暴露面；
 - bridge 只改变系统 UI 设置（低电量/方向锁定）或读取网络状态，不执行任意代码、不访问个人数据；
 - 不安装 bridge 时 CLI 明确返回 `ellekit_bridge_unavailable`；
-- Wi-Fi 与飞行模式只读：没有提供会断开 SSH/网络的写操作。
+- Wi-Fi、飞行模式与蓝牙只读：BluetoothManager 的 `setEnabled:` 在 CLI 与 SpringBoard 上下文都返回未生效，未提供会断开 SSH/网络的写操作。
 
 ## 限制
 

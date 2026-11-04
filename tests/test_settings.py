@@ -74,11 +74,12 @@ class SettingsBoundaryTests(unittest.TestCase):
     def test_unsupported_setting_does_not_start_helper(self):
         with patch("ios_control_bridge.settings.subprocess.run",
                    side_effect=AssertionError("unexpected helper")):
-            output = get_setting({"setting": "wifi"})
+            output = get_setting({"setting": "focus_mode"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "unsupported_setting")
         self.assertEqual(output["data"]["supported_settings"],
-                         ["volume", "brightness", "low_power", "orientation_lock"])
+                         ["volume", "brightness", "low_power", "orientation_lock",
+                          "wifi", "airplane", "bluetooth"])
 
     def test_unknown_parameters_are_rejected_before_helper(self):
         with patch("ios_control_bridge.settings.subprocess.run",
@@ -190,6 +191,28 @@ class BooleanSettingsTests(unittest.TestCase):
             output = get_setting({"setting": "low_power"})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "ellekit_bridge_unavailable")
+
+    def test_read_only_settings_are_readable(self):
+        responses = [
+            {"status": "ok", "value": 1, "detail": "enabled=1 associated=1"},
+            {"status": "ok", "value": 0, "detail": "airplaneMode=0"},
+        ]
+        with patch("ios_control_bridge.settings.ellekit_bridge.available", return_value=True),              patch("ios_control_bridge.settings.ellekit_bridge.request",
+                   side_effect=responses) as call:
+            wifi = get_setting({"setting": "wifi"})
+            airplane = get_setting({"setting": "airplane"})
+        self.assertEqual(wifi["status"], "verified")
+        self.assertTrue(wifi["data"]["value"])
+        self.assertEqual(airplane["status"], "verified")
+        self.assertFalse(airplane["data"]["value"])
+        self.assertEqual([item.args[0] for item in call.call_args_list], ["get_wifi", "get_airplane"])
+
+    def test_read_only_settings_reject_writes_without_bridge_call(self):
+        with patch("ios_control_bridge.settings.ellekit_bridge.request",
+                   side_effect=AssertionError("unexpected bridge write")):
+            output = set_setting({"setting": "wifi", "value": True})
+        self.assertEqual(output["status"], "unavailable")
+        self.assertEqual(output["reason"], "read_only_setting")
 
     def test_boolean_bridge_timeout(self):
         with patch("ios_control_bridge.settings.ellekit_bridge.available", return_value=True),              patch("ios_control_bridge.settings.ellekit_bridge.request",

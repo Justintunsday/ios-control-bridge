@@ -16,7 +16,7 @@ COMMAND_TMP = DIRECTORY / "spring.cmd.tmp"
 ALLOWED_ACTIONS = {
     "get_low_power", "set_low_power",
     "get_orientation_lock", "set_orientation_lock",
-    "get_wifi", "get_airplane",
+    "get_wifi", "get_airplane", "get_bluetooth",
 }
 DEFAULT_TIMEOUT = 6.0
 
