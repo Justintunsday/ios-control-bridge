@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "iOS Control Bridge request",
+  "type": "object",
+  "required": ["operation"],
+  "properties": {
+    "operation": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"},
+    "request_id": {"type": "string", "format": "uuid"},
+    "params": {"type": "object"}
+  },
+  "additionalProperties": false
+}

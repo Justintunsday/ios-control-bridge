@@ -1,0 +1,4 @@
+interface:
+  display_name: "iOS Control Bridge"
+  short_description: "查询和调整 iPhone 常用系统服务，涵盖设置、闹钟、提醒事项、实时活动和网络查询"
+  default_prompt: "使用 $ios-control-bridge 核实当前设备能力，并按我的请求查询或调整 iPhone 系统服务，报告真实结果与验证范围。"

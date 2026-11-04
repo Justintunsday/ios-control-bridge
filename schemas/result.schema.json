@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "iOS Control Bridge result",
+  "type": "object",
+  "required": ["schema", "operation", "request_id", "status", "observed_at", "complete_for_scope"],
+  "properties": {
+    "schema": {"const": "ios-control-bridge.result.v1"},
+    "operation": {"type": "string"},
+    "request_id": {"type": "string", "format": "uuid"},
+    "status": {"enum": ["verified", "partial", "unavailable", "error"]},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "complete_for_scope": {"type": "boolean"},
+    "source": {"type": "string"},
+    "reason": {"type": "string"},
+    "data": {}
+  },
+  "additionalProperties": false
+}

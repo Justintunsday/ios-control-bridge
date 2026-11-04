@@ -1,0 +1,49 @@
+{
+  "project": "ios-control-bridge",
+  "version": "0.2.0",
+  "verified_at": "2026-11-04T12:24:22.884853+00:00",
+  "environment": {
+    "os_version": "16.1.1",
+    "os_build": "20B101",
+    "model": "iPhone12,8",
+    "uid": 0,
+    "bootstrap_prefix": "/var/jb"
+  },
+  "python_tests": {
+    "passed": 18
+  },
+  "skill_probe_tests": {
+    "passed": 15
+  },
+  "skill_validation": "passed",
+  "device_checks": [
+    "independent_device_identity",
+    "independent_native_content",
+    "completed_empty_target",
+    "timeout_without_cached_body",
+    "invalid_id_error",
+    "planned_write_has_no_effect",
+    "catalog_from_arbitrary_cwd",
+    "stable_desktop"
+  ],
+  "native_binary_sha256": "93649214a44c7d88934df0be2eeb228eee01e4466efe1bee6422c1d97198501c",
+  "native_source_sha256": {
+    "ActivityBridge.h": "87f880b120d0885eca270824c0076ba9f588e1a1c6918ff95793a8e29046c049",
+    "ActivityBridge.m": "0780de7390721a8393fff19b44d8b5c08f9b299148f16d3106df24025fc053cb",
+    "entitlements.plist": "23058376dc9e8aac45b6c2d28b548465de1d7ef25ca39ff1228296af19459012",
+    "main.swift": "e69f8cb604babeeb22508e8184af2d4a76e0dba11a3b0058a58d457d3ed8e3ad"
+  },
+  "native_entitlements": {
+    "com.apple.private.sessionkit.listener": true
+  },
+  "result": {
+    "read_content_value": 10,
+    "read_content_revision": 1,
+    "empty_target_complete": true,
+    "timeout_status": "unavailable",
+    "invalid_id_status": "error",
+    "planned_write_reason": "not_implemented"
+  },
+  "desktop_stable": true,
+  "new_springboard_crashes": 0
+}
