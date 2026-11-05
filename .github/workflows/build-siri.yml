@@ -1,0 +1,36 @@
+name: build-siri
+on:
+  push:
+    branches: [main, 'codex/**']
+    paths: ['native/siri/**', '.github/workflows/build-siri.yml']
+  pull_request:
+    paths: ['native/siri/**', '.github/workflows/build-siri.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native Siri development tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/siri
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          for ARCH in arm64 arm64e; do
+            xcrun --sdk iphoneos clang -target "$ARCH-apple-ios16.1" -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror -dynamiclib native/siri/RequestObserver.m -framework Foundation -o "build/siri/RequestObserver.$ARCH.dylib"
+          done
+          xcrun lipo -create build/siri/RequestObserver.arm64.dylib build/siri/RequestObserver.arm64e.dylib -output build/siri/RequestObserver.dylib
+          xcrun --sdk iphoneos clang -target arm64-apple-ios16.1 -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror native/siri/TypedFixture.m -framework Foundation -o build/siri/TypedFixture
+          xcrun lipo -info build/siri/RequestObserver.dylib
+          shasum -a 256 build/siri/RequestObserver.dylib build/siri/TypedFixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: siri-native-development
+          path: |
+            build/siri/RequestObserver.dylib
+            build/siri/TypedFixture
+          if-no-files-found: error
