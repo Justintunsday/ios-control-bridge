@@ -217,12 +217,23 @@ session is available at a time; locking the phone ends it. Disconnect when done,
 and inspect the UI after an ambiguous outcome before issuing another action.
 Keep pairing secrets and raw personal records local.
 
+## Optional native Siri adapter
+
+The [native Siri integration](docs/native-siri.md) keeps the original Siri
+interface and speech presentation while an on-device OpenCode service answers
+recognized speech and typed questions. On iOS 16.1.1 / 20B101, real voice requests
+reached OpenCode and the phone owner confirmed the answers were displayed and
+spoken by the original Siri interface. It adds no visual effects or screen-control
+session. This optional integration lives outside the client-neutral core and
+requires its own build, installation and enable step.
+
 ## Development and verification
 
 ```text
 bin/iosctl                CLI entry point
 src/ios_control_bridge/   Python registry, adapters and result contract
 native/                   Objective-C and Swift helpers; optional SpringBoard shim
+integrations/             Optional client-specific adapters, including native Siri
 skills/                   Portable service and computer-use instructions
 tools/                    Native builds, verification and MCP launchers
 tests/                    Portable Python regression tests
@@ -242,6 +253,8 @@ loading the real SpringBoard shim or observing actual service writes.
 
 The latest [direct-input evidence](evidence/iosremote-direct-text-2026-11-05.json)
 records 138 passing Python tests and the Unicode fixture results. The
+[native Siri evidence](evidence/native-siri-2026-11-05.json) records the subsequent
+151-test run and the owner-confirmed native voice/display checks. The
 [0.12.0 review](docs/review-fixes-0.12.0.md) records the separate native fixture and
 system-service checks, including recovery from deployment failures. Validation
 applies to the recorded build, target and observation window.
@@ -259,12 +272,13 @@ Supporting documents currently include English and Chinese material.
 | [SpringBoard bridge](docs/ELLEKIT_BRIDGE.md) | Optional settings shim, local IPC, installation and lifecycle constraints. |
 | [Computer-use integration](docs/iosremote-computer-use.md) | iOSRemoteBridge integration and observed mobile OpenCode UI tasks. |
 | [Direct Unicode input](docs/iosremote-direct-text.md) | Literal insertion, native fixture evidence and remaining checks. |
+| [Native Siri](docs/native-siri.md) | Stock Siri UI/TTS with optional OpenCode answers, installation and device evidence. |
 | [Private API reference](skills/ios-control-bridge/references/private-apis.md) | Framework routes, helper paths and entitlements. |
 | [Roadmap](docs/roadmap.md) | Broader service and automation goals. |
 | [Developer handoff](HANDOFF.md) | Repository layout and implementation guidance. |
 
-Cellular and Focus controls, semantic weekday alarm recurrence, a persistent
-monitoring/notification runner and a voice entry point remain future work. The
+Cellular and Focus controls, semantic weekday alarm recurrence and a persistent
+monitoring/notification runner remain future work. The
 UI backend also lacks an accessibility element tree and device-side rejection
 of stale screenshot coordinates. New services and OS builds need their own
 implementation and verification records.

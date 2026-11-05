@@ -11,6 +11,7 @@ import uuid
 
 from integrations.siri.backend import BackendError, OpenCodeHTTP, PROTOCOL, SiriBackend
 from integrations.siri.server import MAX_FRAME, receive, send
+from integrations.siri.install import replace_file
 
 
 class FakeOpenCode:
@@ -177,6 +178,21 @@ class SiriBackendTests(unittest.TestCase):
             server.server_close()
             worker.join(2)
         self.assertEqual(received, [("/api/info", "Basic " + base64.b64encode(b"opencode:fixture-only").decode())])
+
+    def test_install_replacement_preserves_the_open_signed_inode(self):
+        original = Path(self.temporary.name) / "loaded.dylib"
+        replacement = Path(self.temporary.name) / "signed.dylib"
+        original.write_bytes(b"old mapped pages")
+        replacement.write_bytes(b"new signed pages")
+        # Windows locks open targets; verify inode behavior on the POSIX device instead.
+        import os
+        if os.name == "nt":
+            replace_file(replacement, original, 0o755)
+        else:
+            with original.open("rb") as mapped:
+                replace_file(replacement, original, 0o755)
+                self.assertEqual(mapped.read(), b"old mapped pages")
+        self.assertEqual(original.read_bytes(), b"new signed pages")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-05",
+  "verification_completed_local_date": "2026-11-06",
+  "timezone": "Asia/Hong_Kong",
+  "device": {"model": "iPhone SE (2nd generation)", "ios": "16.1.1", "build": "20B101"},
+  "scope": "Optional native Siri to OpenCode integration; stock interface and TTS",
+  "native_source_commit": "d211c4f93d0dd6ae5da180a7c950a9da7f60beb7",
+  "native_build": {"workflow_run": 42058527308, "result": "success", "architectures": ["arm64", "arm64e"], "warnings_as_errors": true},
+  "backend": {"opencode_version": "2.2.5", "model": "deepseek/deepseek-flash", "transport": "peer-authenticated local Unix socket", "memory_limit_mb": 128, "memory_limit_read_back": true},
+  "portable_tests": {"platform": "Windows", "command": "python -m unittest discover -s tests -v", "passed": 151},
+  "checks": {
+    "real_recognition_callback_abi_captured": true,
+    "synthetic_saobjects_text_extraction_passed": true,
+    "native_framework_to_opencode_roundtrip_passed": true,
+    "native_text_and_speakable_text_match": true,
+    "real_voice_requests_intercepted_and_delivered": 2,
+    "voice_reply_seconds": [1, 2],
+    "owner_confirmed_original_siri_display_and_audible_answer": true,
+    "locked_typed_request_returned_unlock_instruction_without_new_prompt": true,
+    "device_disable_enable_passed": true,
+    "device_atomic_inode_replacement_passed": true,
+    "development_observer_removed": true,
+    "production_ready_and_native_delivery_verified_after_observer_removal": true,
+    "springboard_restart_requested": false,
+    "screen_remote_control_opened_by_test": false,
+    "added_visual_effects": false
+  },
+  "recovery": [
+    "Raised and read back only the new backend process's bounded memory limit after a default per-process-limit termination.",
+    "Recovered the previous native library after an in-place signing invalid-page failure, then signed a fresh inode and atomically installed it.",
+    "An assistantd kickstart command timed out; process and bridge_ready readback confirmed successful startup."
+  ],
+  "not_separately_verified": ["Unattended wake-word detection", "Voice-triggered system writes", "Locked-screen voice requests", "Other OS builds", "Fresh installation on a second clean device"],
+  "privacy": "Sanitized event counts and outcomes only; no addresses, credentials, raw voice transcripts or crash reports."
+}
