@@ -19,7 +19,7 @@ static NSString *ICBRecognitionText(id recognized) {
     id value=ICBGet(recognized,"af_bestTextInterpretation");
     // On 20B101 this category returns an NSString, not an arbitrary description.
     if(![value isKindOfClass:NSString.class]||![value length]||[value length]>4096)return nil;
-    return value;
+    return [value stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
 }
 static const char *ICBBlockTypes(id value) {
     if(!value)return NULL;

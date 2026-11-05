@@ -144,7 +144,10 @@ static void recognize(id self,SEL cmd,id recognized,id completion){
     if(![client isKindOfClass:objc_getClass("ADClientConnection")])client=text?ICBGet(self,"_currentClient"):nil;
     // Captured from the real 20B101 microphone callback; do not guess block arguments.
     if(!text||!types||strcmp(types,"v24@?0@\"SABaseCommand\"8@\"NSError\"16")||
-       ![client isKindOfClass:objc_getClass("ADClientConnection")]){originalRecognize(self,cmd,recognized,completion);return;}
+       ![client isKindOfClass:objc_getClass("ADClientConnection")]){
+        if(enabled())metadata(!text?"voice_text_unavailable":(![client isKindOfClass:objc_getClass("ADClientConnection")]?"voice_client_unavailable":"voice_block_unsupported"));
+        originalRecognize(self,cmd,recognized,completion);return;
+    }
     id ref=ICBGet(recognized,"refId");
     ICBExternalSiriTurn *turn=begin(client,[ref isKindOfClass:NSString.class]?ref:nil);
     metadata("voice_query_intercepted");
@@ -166,8 +169,8 @@ static void receive(id self,SEL cmd,id command,id reply){
         if(types&&!strcmp(types,"v24@?0@\"AceObject<SAAceCommand>\"8@\"NSError\"16")){
             ((void(^)(id,id))reply)(nil,nil);metadata("stock_reply_suppressed");return;
         }
-        // Unknown block ABI: invalidate routing rather than invoke an incompatible block.
-        invalidate(self);
+        // Keep fulfillment suppressed; never guess an unknown block ABI or replay via Siri.
+        metadata("stock_reply_block_unsupported");return;
     }
     originalReceive(self,cmd,command,reply);
 }
