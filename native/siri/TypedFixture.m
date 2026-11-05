@@ -8,9 +8,11 @@
 @interface FixtureDelegate : NSObject
 @property(nonatomic,strong) NSMutableArray *events;
 @property(nonatomic,strong) NSMutableArray *utterances;
+@property(nonatomic,strong) NSMutableArray *speakable;
+@property(nonatomic) BOOL finished;
 @end
 @implementation FixtureDelegate
-- (instancetype)init {if((self=[super init])){_events=[NSMutableArray array];_utterances=[NSMutableArray array];}return self;}
+- (instancetype)init {if((self=[super init])){_events=[NSMutableArray array];_utterances=[NSMutableArray array];_speakable=[NSMutableArray array];}return self;}
 - (void)assistantConnectionRequestWillStart:(id)connection {(void)connection;[self.events addObject:@"request_will_start"];}
 - (void)assistantConnection:(id)connection receivedCommand:(id)command completion:(void (^)(id))completion {
     (void)connection;[self.events addObject:NSStringFromClass([command class])];
@@ -23,6 +25,11 @@
                 id value=((id(*)(id,SEL))objc_msgSend)(view,sel_registerName("text"));
                 if([value isKindOfClass:NSString.class]&&[value length]<2000)[self.utterances addObject:value];
             }
+            Method speak=class_getInstanceMethod([view class],sel_registerName("speakableText"));
+            if(speak&&!strcmp(method_getTypeEncoding(speak),"@16@0:8")){
+                id value=((id(*)(id,SEL))objc_msgSend)(view,sel_registerName("speakableText"));
+                if([value isKindOfClass:NSString.class]&&[value length]<4097)[self.speakable addObject:value];
+            }
         }
     }
     if(completion)completion(nil);
@@ -30,8 +37,15 @@
 - (void)assistantConnection:(id)connection requestFailedWithError:(NSError *)error requestClass:(id)requestClass {
     (void)connection;(void)requestClass;
     [self.events addObject:[NSString stringWithFormat:@"request_failed:%@:%ld:%@",error.domain,(long)error.code,[error.localizedDescription substringToIndex:MIN((NSUInteger)240,error.localizedDescription.length)]]];
+    self.finished=YES;
 }
-- (void)assistantConnectionRequestFinished:(id)connection {(void)connection;[self.events addObject:@"request_finished"];}
+- (void)assistantConnectionRequestFinished:(id)connection {(void)connection;[self.events addObject:@"request_finished"];self.finished=YES;}
+- (void)assistantConnection:(id)connection speechRecognized:(id)recognition {
+    (void)connection;[self.events addObject:[@"recognized:" stringByAppendingString:NSStringFromClass([recognition class])]];
+}
+- (void)assistantConnection:(id)connection speechRecognitionDidFail:(NSError *)error {
+    (void)connection;[self.events addObject:[NSString stringWithFormat:@"recognition_failed:%@:%ld",error.domain,(long)error.code]];
+}
 @end
 int main(int argc,char *argv[]){@autoreleasepool{
     void *handle=dlopen("/System/Library/PrivateFrameworks/AssistantServices.framework/AssistantServices",RTLD_NOW);
@@ -40,10 +54,18 @@ int main(int argc,char *argv[]){@autoreleasepool{
     if(!handle||!method||strcmp(method_getTypeEncoding(method),"v24@0:8@16"))return 2;
     id connection=[[cls alloc] init];FixtureDelegate *delegate=[FixtureDelegate new];
     ((void(*)(id,SEL,id))objc_msgSend)(connection,sel_registerName("setDelegate:"),delegate);
-    NSString *question=argc==2?[NSString stringWithUTF8String:argv[1]]:@"What is one plus one? Reply with the number only.";
-    ((void(*)(id,SEL,id))objc_msgSend)(connection,start,question);
-    NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:8];
-    while(deadline.timeIntervalSinceNow>0)[NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
+    BOOL speech=argc==3&&!strcmp(argv[1],"--speech-file");
+    if(speech){
+        SEL speechStart=sel_registerName("startSpeechRequestWithSpeechFileAtURL:");
+        Method api=class_getInstanceMethod(cls,speechStart);if(!api||strcmp(method_getTypeEncoding(api),"v24@0:8@16"))return 3;
+        ((void(*)(id,SEL,id))objc_msgSend)(connection,sel_registerName("setSpeechDelegate:"),delegate);
+        ((void(*)(id,SEL,id))objc_msgSend)(connection,speechStart,[NSURL fileURLWithPath:[NSString stringWithUTF8String:argv[2]]]);
+    }else{
+        NSString *question=argc==2?[NSString stringWithUTF8String:argv[1]]:@"What is one plus one? Reply with the number only.";
+        ((void(*)(id,SEL,id))objc_msgSend)(connection,start,question);
+    }
+    NSDate *deadline=[NSDate dateWithTimeIntervalSinceNow:44];
+    while(!delegate.finished&&deadline.timeIntervalSinceNow>0)[NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
     ((void(*)(id,SEL))objc_msgSend)(connection,sel_registerName("cancelRequest"));
-    NSData *json=[NSJSONSerialization dataWithJSONObject:@{@"synthetic_request_submitted":@YES,@"delegate_events":delegate.events,@"received_utterances":delegate.utterances,@"microphone_requested":@NO} options:0 error:NULL];fwrite(json.bytes,1,json.length,stdout);fputc('\n',stdout);
+    NSData *json=[NSJSONSerialization dataWithJSONObject:@{@"synthetic_request_submitted":@YES,@"delegate_events":delegate.events,@"received_utterances":delegate.utterances,@"speakable_text":delegate.speakable,@"microphone_requested":@NO} options:0 error:NULL];fwrite(json.bytes,1,json.length,stdout);fputc('\n',stdout);
 }return 0;}
