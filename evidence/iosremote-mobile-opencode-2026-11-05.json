@@ -1,0 +1,12 @@
+{
+  "schema": "ios-control-bridge.mobile-opencode-validation.v1",
+  "date": "2026-11-05",
+  "device": {"model": "iPhone12,8", "ios": "16.1.1", "build": "20B101"},
+  "host": {"location": "on_device", "opencode_version": "2.2.5", "model": "deepseek/deepseek-flash", "agent": "build", "python_version": "3.9.9", "mcp_transport": "python39_stdlib", "tool_count": 9},
+  "task": {"app": "Instagram", "requested_seconds": 180, "observed_seconds": 183, "start_hong_kong": "2026-11-05T20:09:51+08:00", "end_hong_kong": "2026-11-05T20:12:54+08:00", "successful_swipes": 14, "screenshots_including_preparation": 19, "taps": {"open_app": 1, "close_obstructing_ad_survey": 1}, "last_swipe_completed_before_deadline": true},
+  "verification": {"native_mcp_model_image_delivery": true, "model_located_app_from_real_image": true, "new_image_after_each_swipe": true, "coordinator_injected_browsing_actions": false, "session_succeeded": true, "device_session_disconnected": true, "final_screen": "instagram_home_feed", "springboard_pid_unchanged": true, "safe_mode_marker_present": false, "likes_follows_comments_messages_submitted": false, "python_tests_passed": 134, "new_stdio_boundary_tests_passed": 9, "sdk_stdio_interoperability_passed": true},
+  "provider_setup": {"initial_default_provider_result": "403_model_not_available_in_country", "initial_attempt_ui_actions": 0, "existing_deepseek_used_for_this_session": true, "global_model_or_credentials_changed": false},
+  "on_device_python39_boundary_tests_passed": 9,
+  "remaining": ["native_codex_model_mcp_image_acceptance", "accessibility_tree", "arbitrary_unicode", "long_duration_validation"],
+  "private_artifacts": "Pairing files, device addresses, raw messages, session IDs, screenshots and Instagram content are excluded from Git."
+}

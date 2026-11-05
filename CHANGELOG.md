@@ -5,6 +5,7 @@
 - Add a portable `ios-computer-use` skill using the existing iOSRemoteBridge MCP tools, plus a working-directory-independent stdio launcher. Keep the system-service CLI dependency-free.
 - Verify JPEG observation, tap, swipe, Home and visible ASCII entry on the existing iOS 16.1.1 installation. Record the launch error with an observed UI effect; do not retry automatically.
 - Keep AX, Unicode input, observation IDs and two-host model image delivery explicitly unverified or unavailable. No device plugin installation or respring is needed for this integration.
+- Add an optional Python 3.9 stdlib MCP transport for the phone. Mobile OpenCode 2.2.5 / DeepSeek Flash received actual MCP images and browsed Instagram for 183 seconds with 14 swipes, then disconnected. Native Codex model image delivery remains pending. All 134 Python tests pass.
 
 ## 0.12.0 — Fix review findings and replace the SpringBoard mailbox
 

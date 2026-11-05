@@ -36,8 +36,20 @@
 
 这是可用的基础可视操作后端，仍缺少 AX / element_id、前台 bundle / scene、焦点与 secure-field 元数据、设备端 observation_id / 旧图拒绝、任意 Unicode 和可靠输入语义。旋转、长按、多点、持续运行以及两个宿主分别向其模型传递图片未在本轮完成验收。`iosctl ui.*` 及研究文档中的 `ios_ui_*` 契约没有实现。
 
-Codex 和 OpenCode 可以配置同一个 stdio 启动入口；本轮通过 Codex 的执行工具调用真实 MCP SDK，并把图片交给模型查看。此结果不等于两个客户端重载后各自的原生 MCP 工具已由模型验收。要补这项，只需在各宿主重载后分别调用一次截图、描述图片，并执行一次可恢复操作；不需要重复安装手机插件。
+初次桌面测试通过 Codex 的执行工具调用真实 MCP SDK，并把图片交给模型查看；它没有证明两个宿主原生 MCP 的图片链路。后续已完成下文的手机 OpenCode 模型验收，Codex 原生 MCP 链路仍待单独验证。
 
-本机已将 `iosremote` 条目分别合并到 Codex 与 OpenCode 的用户配置，其他配置保持相同；共用技能已安装到用户的 `.agents/skills/ios-computer-use`。Codex CLI 能读回新条目；OpenCode 2.0.26 经 `opencode reload` 后，`opencode mcp list` 显示 `iosremote connected`。两个入口使用同一已验证的启动命令。MCP 目录连接成功仍不代表设备会话已经建立；模型图片验收保持待补。
+开发电脑已将 `iosremote` 条目分别合并到 Codex 与 OpenCode 的用户配置，其他配置保持相同；共用技能已安装到用户的 `.agents/skills/ios-computer-use`。Codex CLI 能读回新条目；桌面 OpenCode 2.0.26 经 `opencode reload` 后，`opencode mcp list` 显示 `iosremote connected`。MCP 目录连接成功不代表设备会话已经建立。
 
 插件一次只允许一个远程会话。GUI 与两个 AI 客户端使用完应释放自己的会话；不会为另一端抢占连接。锁定会拒绝或终止会话，解锁由用户正常完成。当前系统服务继续使用 `iosctl`，可视界面通过独立 UI 后端操作。
+
+## 手机 OpenCode 模型验收
+
+同日 20:09:51–20:12:54（香港时间），用户要求手机 OpenCode 浏览 Instagram 三分钟。实际执行者为手机上运行的 OpenCode 2.2.5 `build` 会话与已有的 `deepseek/deepseek-flash`；开发电脑仅发送任务、读取该会话记录并抽查其返回的图片，没有代替它注入浏览动作。
+
+手机的 Python 为 3.9.9，而上游 MCP SDK 2.3.0 要求 Python 3.10+，因此新增 `--stdlib` 入口。它使用本仓库的 `tools/iosremote_stdio.py` 提供九个基础 MCP 工具，仍复用上游 TLS 客户端和原有配对。接口在手机配置并重载后，原生 MCP 直接把 JPEG 图片交给移动端模型。
+
+该会话先看见当前 App，返回桌面、看图定位 Instagram 图标并打开，再用新图确认首页。实际浏览 183 秒，完成 14 次滑动，包含准备阶段共取得 19 张截图。每次滑动后均重新截图；两次单击分别是打开 App 与关闭广告问卷弹窗。最后一次滑动在目标截止时间前完成，收尾记录时比 180 秒目标多三秒。随后主动断开，最后保留 Instagram 首页。
+
+默认免费模型最初返回地区不可用的 403，尚未进行任何输入；仅本次会话改用已有 DeepSeek 配置后执行成功。没有更换全局默认模型、代理、地区或认证资料。任务期间没有点赞、关注、评论或消息操作，SpringBoard PID 前后相同，无安全模式标记。截图、账号信息、会话 ID 与原始聊天记录留在本地；公开记录仅有[脱敏结果](../evidence/iosremote-mobile-opencode-2026-11-05.json)。
+
+新增 stdio 的九项边界测试、原有 125 项回归全部通过；这九项测试也在手机 Python 3.9.9 通过。另用官方 MCP 2.3 客户端进程验证初始化、只读拒绝、坐标约束及不同工作目录启动，图片交付经手机原生 OpenCode 链路验证。有限时长与一个真实 App 的通过不代表任意 App 或长期无人值守能力已验收。

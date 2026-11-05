@@ -49,3 +49,11 @@ OpenCode 2.0.26 实测能读取上述兼容配置，并把它规范化为 `mcp.s
 共享技能可放入 `~/.agents/skills/ios-computer-use`；避免在多个发现目录安装同名副本。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp)、[Codex skills](https://learn.chatgpt.com/docs/build-skills)、[OpenCode MCP](https://opencode.ai/docs/mcp-servers/)、[OpenCode skills](https://opencode.ai/docs/skills/)。
 
 不要让两端同时调用设备工具。上游设备端一次只允许一个会话，持有者结束任务应 `disconnect()`。若锁定、超时或远程会话被占用，报告实际错误，继续不依赖设备的工作，不禁用手机自动锁定或改写锁屏检查。
+
+## 手机上的 Python 3.9
+
+当前越狱设备的 Python 为 3.9.9，上游 MCP 2.3.0 要求 Python 3.10+。手机可在同一个启动命令中增加 `--stdlib`，使用本仓库 `tools/iosremote_stdio.py` 的无依赖 MCP stdio 传输。它继续调用经过审查的上游 `automation/client.py` / `protocol.py`，保留原有证书固定和配对，不另开 HTTP 端口，不重装设备插件。
+
+这个入口提供 9 个实际工具：设备信息、截图、方向、连接状态、单击、滑动、ASCII 输入、Home 和断开；不暴露上游全部 13 个工具。只读会话先拒绝输入，数值/坐标/时长由主机与设备分别校验；错误不自动重发。
+
+手机上的 OpenCode 2.2.5 使用其实际 `debug paths` / `debug config` 找到的用户目录配置；不要套用电脑上的 Windows 路径。当前设备通过自己的 Wi-Fi 地址连接既有插件，回环地址未监听；地址与配对文件留在私有本地配置中。使用 `opencode reload` 后检查手机自己的 `opencode mcp list`，不能用电脑端的 connected 代替手机端验收。
