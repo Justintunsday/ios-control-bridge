@@ -22,15 +22,19 @@ jobs:
           SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
           for ARCH in arm64 arm64e; do
             xcrun --sdk iphoneos clang -target "$ARCH-apple-ios16.1" -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror -dynamiclib native/siri/RequestObserver.m -framework Foundation -o "build/siri/RequestObserver.$ARCH.dylib"
+            xcrun --sdk iphoneos clang -target "$ARCH-apple-ios16.1" -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror -dynamiclib native/siri/NativeBridge.m -framework Foundation -o "build/siri/NativeBridge.$ARCH.dylib"
           done
           xcrun lipo -create build/siri/RequestObserver.arm64.dylib build/siri/RequestObserver.arm64e.dylib -output build/siri/RequestObserver.dylib
+          xcrun lipo -create build/siri/NativeBridge.arm64.dylib build/siri/NativeBridge.arm64e.dylib -output build/siri/NativeBridge.dylib
           xcrun --sdk iphoneos clang -target arm64-apple-ios16.1 -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror native/siri/TypedFixture.m -framework Foundation -o build/siri/TypedFixture
           xcrun lipo -info build/siri/RequestObserver.dylib
           shasum -a 256 build/siri/RequestObserver.dylib build/siri/TypedFixture
+          shasum -a 256 build/siri/NativeBridge.dylib
       - uses: actions/upload-artifact@v4
         with:
           name: siri-native-development
           path: |
             build/siri/RequestObserver.dylib
             build/siri/TypedFixture
+            build/siri/NativeBridge.dylib
           if-no-files-found: error
