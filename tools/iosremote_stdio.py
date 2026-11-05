@@ -34,7 +34,9 @@ TOOLS = [
     tool("swipe", "Swipe in normalized natural-portrait coordinates; then inspect a fresh image.",
          {"x": COORD, "y": COORD, "to_x": COORD, "to_y": COORD, "duration_ms": DURATION},
          ["x", "y", "to_x", "to_y"], False),
-    tool("type_text", "Type at most 1024 US-layout ASCII characters into an observed focused field.",
+    tool("insert_text", "Insert literal Unicode into the observed focused field, bypassing IME composition. Prefer for ordinary text, Chinese and emoji. At most 1024 UTF-16 units. Does not press Return or require keyboard mode. Never replay an ambiguous result.",
+         {"text": {"type": "string", "maxLength": 1024}}, ["text"], False),
+    tool("type_text", "Legacy US-layout ASCII key simulation, affected by the active IME. Prefer insert_text for literal text.",
          {"text": {"type": "string", "maxLength": 1024}}, ["text"], False),
     tool("press_home", "Press Home, then inspect the resulting screen.", read=False),
     tool("disconnect", "Release this adapter's device session.", read=False),
@@ -70,6 +72,13 @@ def validate(name, arguments):
                 raise ValueError(key + " must be a bounded string")
             if name == "type_text" and not value.isascii():
                 raise ValueError("type_text supports US-layout ASCII only")
+            if name == "insert_text":
+                try:
+                    units = len(value.encode("utf-16-le")) // 2
+                except UnicodeError as exc:
+                    raise ValueError("text must contain valid Unicode") from exc
+                if units > 1024:
+                    raise ValueError("text exceeds 1024 UTF-16 code units")
     return result
 
 

@@ -60,6 +60,29 @@ class StdioTests(unittest.TestCase):
         a,s=self.ready(True)
         self.assertTrue(self.call(s,'tap',{'x':.5,'y':.5})['isError'])
         self.assertEqual(len(Fake.instances[0].calls),1)
+    def test_literal_unicode_is_preserved_and_does_not_enable_keyboard(self):
+        a,s=self.ready(True)
+        text='AI 直接输入\n你好，世界 😀 café 👩🏽‍💻'
+        self.assertFalse(self.call(s,'insert_text',{'text':text})['isError'])
+        self.assertEqual(Fake.instances[0].calls,[('insert_text',{'text':text})])
+    def test_unicode_boundaries_are_utf16_units_and_reject_unpaired_surrogates(self):
+        a,s=self.ready(True)
+        self.assertFalse(self.call(s,'insert_text',{'text':'😀'*512})['isError'])
+        for text in ['😀'*513,'x'*1025,'\ud800','\udc00']:
+            self.assertTrue(self.call(s,'insert_text',{'text':text})['isError'])
+        self.assertEqual(len(Fake.instances[0].calls),1)
+    def test_literal_input_readonly_gate_precedes_connection(self):
+        a,s=self.ready()
+        self.assertTrue(self.call(s,'insert_text',{'text':'中文😀'})['isError'])
+        self.assertEqual(Fake.instances,[])
+    def test_ambiguous_literal_input_does_not_fallback_or_replay(self):
+        class Ambiguous(Fake):
+            def request(self,name,**args):
+                self.calls.append((name,args))
+                raise RuntimeError('outcome unknown')
+        adapter=Adapter('unused',True,factory=Ambiguous)
+        with self.assertRaises(RuntimeError):adapter.call('insert_text',{'text':'中文😀'})
+        self.assertEqual(adapter.client.calls,[('insert_text',{'text':'中文😀'})])
     def test_status_is_lazy_and_disconnect_releases(self):
         a,s=self.ready()
         self.assertFalse(json.loads(self.call(s,'get_connection_status')['content'][0]['text'])['connected'])

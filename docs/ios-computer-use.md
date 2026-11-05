@@ -24,7 +24,7 @@ Windows 专属的工具初始化和 Windows 操作规则不机械搬进 iOS skil
 
 | 路线 | 可复用能力 | 当前设备的条件与限制 | 建议 |
 | --- | --- | --- | --- |
-| iOSRemoteBridge | 已有 JPEG、HID 触摸、ASCII 与 MCP stdio | 用户设备已有安装；本轮基础操作实测通过；AX / Unicode / 旧观察拒绝缺失 | 当前基础 computer-use 主线，复用插件而无需新增注入 |
+| iOSRemoteBridge | 已有 JPEG、HID 触摸、ASCII、Unicode 直接插入与 MCP stdio | 基础操作及独立输入框 Unicode 回读已验证；AX / 旧观察拒绝缺失，任意编辑器需验证 | 当前基础 computer-use 主线，详见直接输入记录 |
 | WebDriverAgent / XCTest | 截图、可访问控件、点击、滚动、文本输入、App 操作 | 需要可运行的 XCTest runner 与匹配版本；标准构建/启动有 Xcode 和签名条件 | 作为成熟的可选后端与验收对照，先证明 runner 在目标设备可运行 |
 | 设备本地 Objective-C helper / daemon | 复用现有越狱工具链，后续可独立于 Mac 运行 | 跨 App AX 等额外接口/entitlement 尚待逐项验证 | 用于后续补充能力，不重复实现现有插件已验证的截图与触摸 |
 | ZXTouch / XXTouchNG 等旧项目 | 可研究触摸、OCR 与设备工具的实现思路 | ZXTouch README 声明 iOS 11–14；XXTouchNG 仓库已归档。不能据此确认 iOS 16 rootless 可用 | 仅作源码参考，不直接安装旧包；复用代码前核对对应许可证 |

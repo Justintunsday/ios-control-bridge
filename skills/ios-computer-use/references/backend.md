@@ -54,6 +54,6 @@ OpenCode 2.0.26 实测能读取上述兼容配置，并把它规范化为 `mcp.s
 
 当前越狱设备的 Python 为 3.9.9，上游 MCP 2.3.0 要求 Python 3.10+。手机可在同一个启动命令中增加 `--stdlib`，使用本仓库 `tools/iosremote_stdio.py` 的无依赖 MCP stdio 传输。它继续调用经过审查的上游 `automation/client.py` / `protocol.py`，保留原有证书固定和配对，不另开 HTTP 端口，不重装设备插件。
 
-这个入口提供 9 个实际工具：设备信息、截图、方向、连接状态、单击、滑动、ASCII 输入、Home 和断开；不暴露上游全部 13 个工具。只读会话先拒绝输入，数值/坐标/时长由主机与设备分别校验；错误不自动重发。
+这个入口提供 10 个工具：设备信息、截图、方向、连接状态、单击、滑动、Unicode 直接插入、旧 ASCII 按键输入、Home 和断开。`insert_text` 需要同时更新原生插件，旧版插件不支持；以 `input_diagnostics.literal_text_ready` 判断已安装后端是否就绪。只读会话先拒绝输入，数值/坐标/时长及文本边界由主机与设备分别校验；错误不自动重发。
 
 手机上的 OpenCode 2.2.5 使用其实际 `debug paths` / `debug config` 找到的用户目录配置；不要套用电脑上的 Windows 路径。当前设备通过自己的 Wi-Fi 地址连接既有插件，回环地址未监听；地址与配对文件留在私有本地配置中。使用 `opencode reload` 后检查手机自己的 `opencode mcp list`，不能用电脑端的 connected 代替手机端验收。

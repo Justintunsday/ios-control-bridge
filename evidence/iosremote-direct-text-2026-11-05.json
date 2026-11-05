@@ -1,0 +1,95 @@
+{
+  "recorded_at": "2026-11-05T13:41:15.555319+00:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101"
+  },
+  "operation": "insert_text",
+  "native_backend": "IOHIDEventCreateUnicodeEvent/UTF16LE via IOHIDEventSystemClientDispatchEvent",
+  "source": {
+    "repository": "https://github.com/Justintunsday/iOSRemoteBridge",
+    "commit": "9a98e3ac5b2dd784bcffd643148c9c5002517b73",
+    "pull_request": "https://github.com/Justintunsday/iOSRemoteBridge/pull/2",
+    "ci_run": "https://github.com/Justintunsday/iOSRemoteBridge/actions/runs/42036025143"
+  },
+  "owned_uikit_fixture": {
+    "uses_production_IRBInput": true,
+    "checks": [
+      {
+        "case": "Chinese Latin emoji ZWJ accent and newline",
+        "passed": true,
+        "actual_utf16_units": 29,
+        "marked_text_present": false,
+        "input_mode": "zh-Hans"
+      },
+      {
+        "case": "512 supplementary emoji",
+        "passed": true,
+        "actual_utf16_units": 1024,
+        "marked_text_present": false,
+        "input_mode": "zh-Hans"
+      },
+      {
+        "case": "1024 ASCII",
+        "passed": true,
+        "actual_utf16_units": 1024,
+        "marked_text_present": false,
+        "input_mode": "zh-Hans"
+      },
+      {
+        "case": "combining accent consecutive newlines and tab",
+        "passed": true,
+        "actual_utf16_units": 15,
+        "marked_text_present": false,
+        "input_mode": "zh-Hans"
+      },
+      {
+        "case": "empty input",
+        "passed": true,
+        "actual_utf16_units": 0,
+        "marked_text_present": false,
+        "input_mode": "zh-Hans"
+      },
+      {
+        "case": "over-limit rejection",
+        "passed": true,
+        "actual_utf16_units": 0,
+        "marked_text_present": false,
+        "input_mode": "zh-Hans"
+      }
+    ],
+    "targeted_BKSHID_probe_delivered": false,
+    "targeted_route_used_in_production": false
+  },
+  "deployment": {
+    "installed": true,
+    "package_sha256": "991d949ad4cbd276eee50a54ef395264d5b856e2aade147c2492ec753f12e02c",
+    "literal_text_ready": true,
+    "safe_mode": false,
+    "pairing_preserved": true,
+    "health_observed_seconds": 46.7,
+    "first_attempt_rolled_back_on_process_change": true,
+    "second_attempt_passed_readiness_and_stability_checks": true
+  },
+  "clients": {
+    "desktop_skill_updated": true,
+    "mobile_skill_updated": true,
+    "mobile_runtime_updated": true,
+    "mobile_mcp_catalog": "connected",
+    "stdlib_tool_count": 10,
+    "python39_stdio_tests_passed": 13,
+    "core_tests_passed": 138,
+    "upstream_automation_tests_passed": 16,
+    "native_ci_and_validator_passed": true
+  },
+  "remote_control": {
+    "screenshot_or_touch_session_opened": false,
+    "final_bridge_state": "loaded"
+  },
+  "limits": [
+    "Owned UITextView readback verifies native insertion, not a deployed MCP input round trip.",
+    "Secure fields, arbitrary custom editors, other iOS builds and single-line newline handling are not verified.",
+    "submitted and delivery_verified:false do not prove target UI or business success."
+  ]
+}

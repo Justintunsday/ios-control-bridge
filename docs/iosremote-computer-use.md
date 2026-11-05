@@ -34,7 +34,7 @@
 
 该插件实际使用自定义 TLS / IRB1 协议，不能作为普通 RFB/VNC 服务连接。它已提供 MCP，当前不需要再开发另一套截图或 HID 注入。
 
-这是可用的基础可视操作后端，仍缺少 AX / element_id、前台 bundle / scene、焦点与 secure-field 元数据、设备端 observation_id / 旧图拒绝、任意 Unicode 和可靠输入语义。旋转、长按、多点、持续运行以及两个宿主分别向其模型传递图片未在本轮完成验收。`iosctl ui.*` 及研究文档中的 `ios_ui_*` 契约没有实现。
+这是可用的基础可视操作后端，仍缺少 AX / element_id、前台 bundle / scene、焦点与 secure-field 元数据、设备端 observation_id / 旧图拒绝和可靠业务提交语义。后续新增的 Unicode 直接插入及实际验证边界见 [直接输入记录](iosremote-direct-text.md)。旋转、长按、多点、持续运行以及两个宿主分别向其模型传递图片未在本轮完成验收。`iosctl ui.*` 及研究文档中的 `ios_ui_*` 契约没有实现。
 
 初次桌面测试通过 Codex 的执行工具调用真实 MCP SDK，并把图片交给模型查看；它没有证明两个宿主原生 MCP 的图片链路。后续已完成下文的手机 OpenCode 模型验收，Codex 原生 MCP 链路仍待单独验证。
 
