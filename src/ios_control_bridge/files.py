@@ -111,6 +111,16 @@ def search_files(params, request_id=None):
     needle = query.casefold()
     matches = []
     scanned = 0
+    errors = []
+    failed_directories = 0
+
+    def failed(directory, error):
+        nonlocal failed_directories
+        failed_directories += 1
+        if len(errors) < 20:
+            errors.append({"relative_path": str(directory.relative_to(path)),
+                           "reason": "permission_denied" if isinstance(error, PermissionError)
+                           else "filesystem_error"})
 
     def visit(directory, depth):
         nonlocal scanned
@@ -122,17 +132,20 @@ def search_files(params, request_id=None):
                     scanned += 1
                     try:
                         is_directory = entry.is_dir(follow_symlinks=False)
-                    except OSError:
+                    except OSError as error:
+                        failed(Path(entry.path), error)
                         continue
                     if needle in entry.name.casefold():
                         item = _entry(Path(entry.path))
                         if item is not None:
+                            item["relative_path"] = str(Path(entry.path).relative_to(path))
                             matches.append(item)
                             if len(matches) >= limit:
                                 return True
                     if is_directory and depth < max_depth and visit(Path(entry.path), depth + 1):
                         return True
-        except (PermissionError, OSError):
+        except OSError as error:
+            failed(directory, error)
             return False
         return False
 
@@ -141,10 +154,15 @@ def search_files(params, request_id=None):
     except PermissionError:
         return result(operation, "unavailable", reason="permission_denied", request_id=request_id)
     truncated = len(matches) >= limit
-    return result(operation, "verified", request_id=request_id, complete=not truncated,
+    root_failed = any(error["relative_path"] == "." for error in errors)
+    status = "unavailable" if root_failed else "partial" if errors else "verified"
+    reason = errors[0]["reason"] if root_failed else "incomplete_search" if errors else None
+    return result(operation, status, request_id=request_id, complete=not (truncated or errors),
+                  reason=reason,
                   data={"path": str(path), "query": query, "matches": matches[:limit],
                         "count": len(matches[:limit]), "scanned": scanned,
-                        "truncated": truncated, "limit": limit, "max_depth": max_depth},
+                        "truncated": truncated, "limit": limit, "max_depth": max_depth,
+                        "errors": errors, "failed_directories": failed_directories},
                   source="local_filesystem")
 
 

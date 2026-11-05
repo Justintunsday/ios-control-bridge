@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "../common/RuntimeABI.h"
 
 /*
  * Fixed-purpose ReminderKit adapter.
@@ -58,33 +59,30 @@ static NSDictionary *error_response(NSString *reason) {
     return response(@"error", @{@"reason": reason});
 }
 
+static id reminder_store = nil;
 static id rem_store(void) {
-    static id store = nil;
-    if (store) return store;
+    if (reminder_store) return reminder_store;
     dlopen("/System/Library/PrivateFrameworks/ReminderKit.framework/ReminderKit", RTLD_LAZY | RTLD_LOCAL);
     Class cls = NSClassFromString(@"REMStore");
     if (!cls) return nil;
-    store = ((id (*)(id, SEL))objc_msgSend)((id)[cls alloc], sel_registerName("init"));
-    return store;
+    reminder_store = ((id (*)(id, SEL))objc_msgSend)((id)[cls alloc], sel_registerName("init"));
+    return reminder_store;
 }
 
 static NSString *object_uuid(id object_id) {
-    NSString *description = object_id ? [object_id description] : @"";
-    NSRange range = [description rangeOfString:@"/" options:NSBackwardsSearch];
-    if (range.location != NSNotFound && range.location + 1 < description.length) {
-        NSString *tail = [description substringFromIndex:range.location + 1];
-        NSRange close = [tail rangeOfString:@">"];
-        if (close.location != NSNotFound) tail = [tail substringToIndex:close.location];
-        return [tail uppercaseString];
+    if (!ICBABI(object_id, "uuid", "@16@0:8")) return @"";
+    id uuid = ((id (*)(id, SEL))objc_msgSend)(object_id, sel_registerName("uuid"));
+    return [uuid isKindOfClass:[NSUUID class]] ? [[uuid UUIDString] uppercaseString] : @"";
+}
+
+static id object_identifier(id object) {
+    if (!ICBABI(object, "objectID", "@16@0:8")) {
+        if (!ICBABI(object, "forwardingTargetForSelector:", "@24@0:8:16")) return nil;
+        object = ((id (*)(id, SEL, SEL))objc_msgSend)(object,
+            sel_registerName("forwardingTargetForSelector:"), sel_registerName("objectID"));
     }
-    NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:
-                               @"0123456789ABCDEFabcdef-"];
-    NSMutableString *value = [NSMutableString string];
-    for (NSUInteger index = 0; index < description.length; index++) {
-        unichar c = [description characterAtIndex:index];
-        if ([allowed characterIsMember:c]) [value appendFormat:@"%C", c];
-    }
-    return [value uppercaseString];
+    if (!ICBABI(object, "objectID", "@16@0:8")) return nil;
+    return ((id (*)(id, SEL))objc_msgSend)(object, sel_registerName("objectID"));
 }
 
 static NSString *string_value(id object, const char *selector) {
@@ -114,12 +112,12 @@ static NSArray *lists(void) {
     NSError *error = nil;
     id value = ((id (*)(id, SEL, NSError **))objc_msgSend)(
         store, sel_registerName("fetchListsForEventKitBridgingWithError:"), &error);
-    return [value isKindOfClass:[NSArray class]] ? value : nil;
+    return !error && [value isKindOfClass:[NSArray class]] ? value : nil;
 }
 
 static id find_list(NSString *identifier) {
     for (id list in lists()) {
-        if ([object_uuid(((id (*)(id, SEL))objc_msgSend)(list, sel_registerName("objectID")))
+        if ([object_uuid(object_identifier(list))
              isEqualToString:identifier]) {
             return list;
         }
@@ -131,25 +129,34 @@ static NSArray *reminders_in_list(id list) {
     NSError *error = nil;
     id value = ((id (*)(id, SEL, NSError **))objc_msgSend)(
         list, sel_registerName("fetchRemindersWithError:"), &error);
-    return [value isKindOfClass:[NSArray class]] ? value : nil;
+    return !error && [value isKindOfClass:[NSArray class]] ? value : nil;
 }
 
-static id find_reminder(NSString *identifier, id *out_list) {
-    for (id list in lists()) {
-        for (id reminder in reminders_in_list(list)) {
-            id object_id = ((id (*)(id, SEL))objc_msgSend)(reminder, sel_registerName("objectID"));
-            if ([object_uuid(object_id) isEqualToString:identifier]) {
+static id find_reminder(NSString *identifier, id *out_list, BOOL *complete) {
+    if (complete) *complete = NO;
+    NSArray *all_lists = lists();
+    if (!all_lists) return nil;
+    for (id list in all_lists) {
+        NSArray *items = reminders_in_list(list);
+        if (!items) return nil;
+        for (id reminder in items) {
+            id object_id = object_identifier(reminder);
+            NSString *candidate_id = object_uuid(object_id);
+            if (!candidate_id.length) return nil;
+            if ([candidate_id isEqualToString:identifier]) {
                 if (out_list) *out_list = list;
+                if (complete) *complete = YES;
                 return reminder;
             }
         }
     }
+    if (complete) *complete = YES;
     return nil;
 }
 
 static NSDictionary *list_description(id list) {
     return @{
-        @"id": object_uuid(((id (*)(id, SEL))objc_msgSend)(list, sel_registerName("objectID"))),
+        @"id": object_uuid(object_identifier(list)),
         @"name": string_value(list, "name"),
         @"reminder_count": @([reminders_in_list(list) count]),
     };
@@ -162,12 +169,12 @@ static NSDictionary *reminder_description(id reminder, id list) {
     if (!completed) completed = @(bool_value(reminder, "isCompleted", NO));
     id due = kvc_value(reminder, @"dueDate");
     return @{
-        @"id": object_uuid(((id (*)(id, SEL))objc_msgSend)(reminder, sel_registerName("objectID"))),
+        @"id": object_uuid(object_identifier(reminder)),
         @"title": string_value(reminder, "titleAsString"),
         @"completed": completed,
         @"due_at_unix": [due isKindOfClass:[NSDate class]] ? @([(NSDate *)due timeIntervalSince1970])
                                                           : (id)[NSNull null],
-        @"list_id": list ? object_uuid(((id (*)(id, SEL))objc_msgSend)(list, sel_registerName("objectID"))) : @"",
+        @"list_id": list ? object_uuid(object_identifier(list)) : @"",
     };
 }
 
@@ -222,28 +229,37 @@ int main(int argc, char **argv) {
                 sel_registerName("initWithStore:"), rem_store());
             id list_change = ((id (*)(id, SEL, id))objc_msgSend)(
                 request, sel_registerName("updateList:"), list);
-            ((id (*)(id, SEL, id, id))objc_msgSend)(
+            if (!ICBABI(request, "addReminderWithTitle:toListChangeItem:", "@32@0:8@16@24"))
+                return emit(response(@"unavailable", @{@"reason": @"private_abi_mismatch"}));
+            id created = ((id (*)(id, SEL, id, id))objc_msgSend)(
                 request, sel_registerName("addReminderWithTitle:toListChangeItem:"), title, list_change);
+            NSString *created_id = object_uuid(object_identifier(created));
+            if (!created_id.length) return emit(response(@"unavailable", @{@"reason": @"created_identity_unavailable"}));
             NSError *error = nil;
             if (!save_request(request, &error))
                 return emit(error_response(error.localizedDescription ?: @"save_failed"));
             NSArray *after = reminders_in_list(list);
+            if (!after) return emit(response(@"partial", @{@"reason": @"readback_unavailable", @"created_id": created_id}));
             NSDictionary *found = nil;
             for (id reminder in after) {
-                if ([string_value(reminder, "titleAsString") isEqualToString:title]) {
+                if ([object_uuid(object_identifier(reminder)) isEqualToString:created_id]) {
                     found = reminder_description(reminder, list);
                     break;
                 }
             }
-            if (!found) return emit(response(@"partial", @{@"reason": @"create_not_confirmed"}));
-            return emit(response(@"verified", @{@"reminder": found}));
+            if (!found) return emit(response(@"partial", @{@"reason": @"create_not_confirmed", @"created_id": created_id}));
+            if (![found[@"title"] isEqualToString:title] || ![found[@"list_id"] isEqualToString:list_id])
+                return emit(response(@"partial", @{@"reason": @"readback_mismatch", @"created_id": created_id}));
+            return emit(response(@"verified", @{@"reminder": found, @"created_id": created_id}));
         }
         if ([command isEqualToString:@"update"] || [command isEqualToString:@"complete"] ||
             [command isEqualToString:@"delete"]) {
             if (argc < 3) return emit(error_response(@"invalid_arguments"));
             NSString *identifier = [argument(argc, argv, 2) uppercaseString];
             id list = nil;
-            id reminder = find_reminder(identifier, &list);
+            BOOL complete = NO;
+            id reminder = find_reminder(identifier, &list, &complete);
+            if (!complete) return emit(response(@"unavailable", @{@"reason": @"reminders_unavailable"}));
             if (!reminder) return emit(error_response(@"reminder_not_found"));
             id request = ((id (*)(id, SEL, id))objc_msgSend)(
                 ((id (*)(id, SEL))objc_msgSend)(NSClassFromString(@"REMSaveRequest"), sel_registerName("alloc")),
@@ -280,11 +296,14 @@ int main(int argc, char **argv) {
             if (!save_request(request, &error))
                 return emit(error_response(error.localizedDescription ?: @"save_failed"));
             if ([command isEqualToString:@"delete"]) {
-                id still = find_reminder(identifier, NULL);
+                id still = find_reminder(identifier, NULL, &complete);
+                if (!complete) return emit(response(@"partial", @{@"reason": @"readback_unavailable", @"reminder_id": identifier}));
                 if (still) return emit(response(@"partial", @{@"reason": @"delete_not_confirmed"}));
-                return emit(response(@"verified", @{@"deleted": @YES, @"reminder_id": identifier}));
+                return emit(response(@"verified", @{@"deleted": @YES, @"reminder_id": identifier,
+                                                    @"readback_complete": @YES}));
             }
-            id still = find_reminder(identifier, NULL);
+            id still = find_reminder(identifier, NULL, &complete);
+            if (!complete) return emit(response(@"partial", @{@"reason": @"readback_unavailable"}));
             if (!still) return emit(response(@"partial", @{@"reason": @"update_not_confirmed"}));
             return emit(response(@"verified", @{@"reminder": reminder_description(still, list)}));
         }

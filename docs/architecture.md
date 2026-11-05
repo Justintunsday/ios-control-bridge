@@ -42,10 +42,10 @@
 
 ## 可选 ElleKit SpringBoard bridge
 
-`low_power` 与 `orientation_lock` 依赖 SpringBoard 进程内的私有类（`_PMLowPowerMode`、`SBOrientationLockManager`），CLI 进程无法直接访问。可选 tweak `native/ellekit/SpringBridge.m` 通过 ElleKit 注入 SpringBoard，轮询固定命令文件并把命令派发到主队列执行；只接受固定动作（低电量 get/set、方向锁定 get/set、Wi-Fi/飞行模式/蓝牙只读），没有通用 selector 执行入口。Wi-Fi/飞行模式/蓝牙写入在 CLI 层明确拒绝为 `read_only_setting`。bridge 的运行条件、安装方式和安全边界见 [ELLEKIT_BRIDGE.md](ELLEKIT_BRIDGE.md)。
+`low_power` 与 `orientation_lock` 依赖 SpringBoard 进程内的私有类。可选 tweak 通过受限本地 Unix socket 接受固定动作，并在主队列串行执行；内核 peer UID、启动代次、请求 ID 与有效期约束请求。通道保持 C 实现，蓝牙与 Radio 管理器在进程期持有。网络/蓝牙原生 setter 不存在；CLI 也拒绝对应写入。详见 [ELLEKIT_BRIDGE.md](ELLEKIT_BRIDGE.md)。
 
 ## 写操作的实现约束
 
-设置写入已对媒体音量和屏幕亮度实现：固定参数和 0.0-1.0 值范围、明确的设置名、有限超时及修改后的读取验证。原生 helper 返回 before / requested / readback，Python 边界再次校验读回差值；记录读回值和未完成的验证，区分“请求已受理”和“结果已核实”。其他写服务仍处于计划阶段。沿用用户已有授权；不要求用户重复确认已经明确交代的操作。
+设置写入使用固定参数、值范围和修改后的读取验证。日历与提醒创建按新 ID 确认，事件同时核对时间和备注；删除确认必须区分查询失败与完整查询后的缺失。事件分页、文件搜索失败与截断保持不完整状态。写入断连时保留结果未知，先读取状态再决定下一步。沿用用户已有授权，不要求重复确认已经明确交代的操作。
 
 单次 CLI 查询不等于常驻监测。持续任务需要后续独立运行器管理生命周期、连接中断、停止条件和通知；目前没有部署常驻服务。

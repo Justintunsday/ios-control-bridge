@@ -54,7 +54,7 @@ class RemindersBoundaryTests(unittest.TestCase):
         self.assertEqual(output["data"]["reminders"][0]["title"], "test")
 
     def test_create_readback(self):
-        with self.mock_run(payload(reminder={"id": REMINDER, "title": "New",
+        with self.mock_run(payload(created_id=REMINDER, reminder={"id": REMINDER, "title": "New",
                                              "completed": False, "list_id": LIST})):
             output = create_reminder({"list_id": LIST, "title": "New"})
         self.assertEqual(output["status"], "verified")
@@ -72,9 +72,24 @@ class RemindersBoundaryTests(unittest.TestCase):
         self.assertEqual(output["status"], "verified")
 
     def test_delete(self):
-        with self.mock_run(payload(deleted=True, reminder_id=REMINDER)):
+        with self.mock_run(payload(deleted=True, reminder_id=REMINDER, readback_complete=True)):
             output = delete_reminder({"reminder_id": REMINDER})
         self.assertEqual(output["status"], "verified")
+
+    def test_create_rejects_wrong_list_or_created_identity(self):
+        row = {"id": REMINDER, "title": "New", "list_id": LIST}
+        for changes in ({"created_id": LIST}, {"created_id": REMINDER,
+                         "reminder": {**row, "list_id": REMINDER}}):
+            native = payload(reminder=row)
+            native.update(changes)
+            with self.mock_run(native):
+                self.assertEqual(create_reminder({"list_id": LIST, "title": "New"})["status"], "partial")
+
+    def test_delete_requires_complete_readback(self):
+        with self.mock_run(payload(deleted=True, reminder_id=REMINDER)):
+            self.assertEqual(delete_reminder({"reminder_id": REMINDER})["reason"], "native_delete_inconsistent")
+        with self.mock_run(payload(status="partial", reason="readback_unavailable"), exit_code=2):
+            self.assertEqual(delete_reminder({"reminder_id": REMINDER})["status"], "partial")
 
     def test_invalid_uuid(self):
         self.assertEqual(list_reminders({"list_id": "bad"})["reason"], "invalid_list_id")

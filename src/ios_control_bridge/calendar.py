@@ -1,6 +1,7 @@
 """EventKit calendar adapter with explicit source selection and readback."""
 from pathlib import Path
 import json
+import math
 import os
 import subprocess
 from datetime import datetime, timezone
@@ -106,7 +107,9 @@ def create_calendar(params, request_id=None):
     if payload["status"] != "verified":
         return _failed(operation, payload, request_id)
     calendar = payload.get("calendar")
-    if not isinstance(calendar, dict) or calendar.get("title") != title:
+    if (not isinstance(calendar, dict) or calendar.get("title") != title
+            or not calendar.get("id") or payload.get("created_id") != calendar.get("id")
+            or (source_id is not None and calendar.get("source_id") != source_id)):
         return result(operation, "partial", data=payload, reason="readback_mismatch",
                       request_id=request_id, complete=False)
     return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
@@ -165,14 +168,19 @@ def _date(value, name, request_id):
         return None, result("calendar", "error", reason="invalid_" + name, request_id=request_id)
     if parsed.tzinfo is None:
         return None, result("calendar", "error", reason="invalid_" + name, request_id=request_id)
-    return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), None
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"), None
 
 
 def list_events(params, request_id=None):
     operation = "calendar.events"
-    extra = set(params) - {"calendar_id", "start", "end"}
+    extra = set(params) - {"calendar_id", "start", "end", "limit", "offset"}
     if extra:
         return result(operation, "error", reason="unknown_parameters", request_id=request_id)
+    limit, offset = params.get("limit", 100), params.get("offset", 0)
+    if type(limit) is not int or not 1 <= limit <= 500:
+        return result(operation, "error", reason="invalid_limit", request_id=request_id)
+    if type(offset) is not int or not 0 <= offset <= 100000:
+        return result(operation, "error", reason="invalid_offset", request_id=request_id)
     identifier, failure = _calendar_id(params, request_id)
     if failure:
         failure["operation"] = operation
@@ -190,15 +198,21 @@ def list_events(params, request_id=None):
     gate = _gate(operation, request_id)
     if gate:
         return gate
-    payload, failure = _invoke(["events", identifier, start, end], operation, request_id)
+    payload, failure = _invoke(["events", identifier, start, end, str(limit), str(offset)], operation, request_id)
     if failure:
         return failure
-    if payload["status"] != "verified":
+    if payload["status"] not in ("verified", "partial"):
         return _failed(operation, payload, request_id)
     if not isinstance(payload.get("events"), list):
         return result(operation, "error", reason="native_events_invalid", request_id=request_id)
-    return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
-                  request_id=request_id, complete=True)
+    truncated, complete = payload.get("truncated"), payload.get("complete_for_scope")
+    if (type(truncated) is not bool or type(complete) is not bool
+            or complete != (not truncated and offset == 0)
+            or payload.get("offset") != offset or payload.get("limit") != limit
+            or len(payload["events"]) > limit):
+        return result(operation, "error", reason="native_completeness_invalid", request_id=request_id)
+    return result(operation, "verified" if complete else "partial", data=payload, source=NATIVE_SOURCE,
+                  reason=None if complete else "paginated_result", request_id=request_id, complete=complete)
 
 
 def create_event(params, request_id=None):
@@ -236,7 +250,14 @@ def create_event(params, request_id=None):
     if payload["status"] != "verified":
         return _failed(operation, payload, request_id)
     event = payload.get("event")
-    if not isinstance(event, dict) or event.get("calendar_id") != identifier or event.get("title") != title:
+    def same_time(actual, expected):
+        return (type(actual) in (int, float) and math.isfinite(actual)
+                and abs(actual - datetime.fromisoformat(expected.replace("Z", "+00:00")).timestamp()) < 0.001)
+
+    if (not isinstance(event, dict) or not event.get("id")
+            or event.get("calendar_id") != identifier or event.get("title") != title
+            or not same_time(event.get("start"), start) or not same_time(event.get("end"), end)
+            or event.get("notes") != notes):
         return result(operation, "partial", data=payload, reason="readback_mismatch",
                       request_id=request_id, complete=False)
     return result(operation, "verified", data=payload, source=NATIVE_SOURCE,

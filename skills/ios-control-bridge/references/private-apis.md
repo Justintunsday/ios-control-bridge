@@ -121,7 +121,9 @@ calendar.event_delete  {"event_id":"EventKit identifier"}
 
 注意：
 
-- 列表/提醒 ID 从 `objectID.description` 中提取 UUID；描述里可能带 emoji/私有 URL 前缀。
+- 列表/提醒 ID 通过真实 `objectID.uuid` 的 NSUUID 获取；change item 的 objectID 会转发到 storage，先核对 forwardingTarget/objectID/uuid 的真实方法签名。不能解析 description 或按标题猜 ID。
+- 创建必须按新 change item 的稳定 ID 读回，核对 `created_id`、返回 ID 和 list/source；不能用同名旧条目确认成功。
+- 删除只有在完整查询成功且目标缺失时才能 verified；读取失败返回 partial/unavailable，不能把 nil 当成已删除。
 - 创建/更新/完成/删除必须用 `REMSaveRequest` 并 `saveSynchronouslyWithError:` 落盘，然后重新 `fetchRemindersWithError:` 验证。
 - 用户自己的提醒只读；测试提醒创建后必须删除并恢复原数量。
 - 如果设备没有提醒账户/清单，不能伪造成功；先确认 EventKit 与 ReminderKit 的实际清单状态。
@@ -155,7 +157,7 @@ CLI：`settings.get/set {"setting":"volume"|"brightness","value":0.0-1.0}`。
 
 - dylib：`/var/jb/usr/lib/TweakInject/icbridge.dylib`
 - filter：`com.apple.springboard`
-- 命令目录：`/var/jb/var/lib/icb`
+- IPC：`/var/jb/var/run/ios-control-bridge/spring.sock`，目录 mobile 所有且 0700，socket 0600；新协议不读取旧文件 mailbox。
 - 固定动作：
   - `get_low_power` / `set_low_power`
   - `get_orientation_lock` / `set_orientation_lock`
@@ -170,8 +172,9 @@ CLI：`settings.get/set {"setting":"volume"|"brightness","value":0.0-1.0}`。
   - `settings.get`：`low_power`、`orientation_lock`、`wifi`、`airplane`、`bluetooth`
   - `settings.set`：仅 `volume`、`brightness`、`low_power`、`orientation_lock`；网络/蓝牙为 `read_only_setting`
 - 安全约束：
-  - bridge constructor 只能使用 C/pthread，所有 Objective-C/Foundation 和 UI 操作派发到 SpringBoard 主队列；不要在 constructor 里调用 Foundation。
-  - 没有通用 selector 执行入口；动作固定，命令文件带 request id。
+  - bridge constructor 只能使用 C/pthread；当前设备工具链的 arm64e 注入通道保持 C 字符串和 C 帧解析，避免 Foundation 常量字符串/字典路径。固定系统操作在主队列执行，不能 sleep 等待。
+  - BluetoothManager / RadiosPreferences 只初始化一次并持有至进程退出；蓝牙存在异步回调，不能在一次 getter 后释放管理器。
+  - 动作固定，内核校验连接者 UID；每连接独立应答，携带启动代次、request ID 与有效期，过期/断连检查后才执行。写入结果未知时先重新读取，不盲目重发。
   - Wi-Fi/飞行模式写入会断开 SSH/网络，未实现为可写；不要偷偷尝试。
 
 ## 6. 构建、部署与验证

@@ -121,11 +121,14 @@ static NSArray *visible_alarms(void) {
     return rows;
 }
 
-static id find_alarm(NSString *identifier) {
+static id find_alarm(NSString *identifier, BOOL *complete) {
     NSArray *all = alarms();
+    if (complete) *complete = all != nil;
     if (!all) return nil;
     for (id alarm in all) {
-        if ([alarm_id(alarm) isEqualToString:identifier]) return alarm;
+        NSString *candidate_id = alarm_id(alarm);
+        if (!candidate_id.length) { if (complete) *complete = NO; return nil; }
+        if ([candidate_id isEqualToString:identifier]) return alarm;
     }
     return nil;
 }
@@ -175,24 +178,14 @@ int main(int argc, char **argv) {
                 return emit(error_response(@"invalid_time"));
             NSString *title = argument(argc, argv, 4);
             if (title.length == 0 || title.length > 64) return emit(error_response(@"invalid_title"));
-            NSArray *before = visible_alarms();
-            create_alarm(hour, minute, title);
+            id created = create_alarm(hour, minute, title);
+            NSString *created_id = alarm_id(created);
             usleep(400000);
-            NSArray *after = visible_alarms();
-            if (!after) return emit(response(@"partial", @{@"reason": @"readback_unavailable"}));
-            NSDictionary *found = nil;
-            for (NSDictionary *row in after) {
-                if ([row[@"title"] isEqualToString:title] &&
-                    [row[@"hour"] unsignedLongLongValue] == hour &&
-                    [row[@"minute"] unsignedLongLongValue] == minute &&
-                    ![before containsObject:row]) {
-                    found = row;
-                    break;
-                }
-            }
-            if (!found) return emit(response(@"partial", @{@"reason": @"create_not_confirmed",
-                                                          @"alarms": after}));
-            return emit(response(@"verified", @{@"alarm": found}));
+            BOOL complete = NO;
+            id found = created_id ? find_alarm(created_id, &complete) : nil;
+            if (!complete || !found) return emit(response(@"partial", @{@"reason": @"create_not_confirmed",
+                                                                        @"created_id": created_id ?: @""}));
+            return emit(response(@"verified", @{@"alarm": alarm_description(found), @"created_id": created_id}));
         }
         if ([command isEqualToString:@"update"]) {
             if (argc < 6) return emit(error_response(@"invalid_arguments"));
@@ -202,7 +195,7 @@ int main(int argc, char **argv) {
                 return emit(error_response(@"invalid_time"));
             NSString *title = argument(argc, argv, 5);
             if (title.length == 0 || title.length > 64) return emit(error_response(@"invalid_title"));
-            id alarm = find_alarm(identifier);
+            id alarm = find_alarm(identifier, NULL);
             if (!alarm) return emit(error_response(@"alarm_not_found"));
             id mutable = ((id (*)(id, SEL))objc_msgSend)(alarm, sel_registerName("mutableCopy"));
             ((VoidSetterULL)objc_msgSend)(mutable, sel_registerName("setHour:"), hour);
@@ -210,7 +203,7 @@ int main(int argc, char **argv) {
             ((VoidSetterObject)objc_msgSend)(mutable, sel_registerName("setTitle:"), title);
             ((VoidCallObject)objc_msgSend)(manager, sel_registerName("updateAlarm:"), mutable);
             usleep(400000);
-            id updated = find_alarm(identifier);
+            id updated = find_alarm(identifier, NULL);
             if (!updated) return emit(response(@"partial", @{@"reason": @"update_not_confirmed"}));
             return emit(response(@"verified", @{@"alarm": alarm_description(updated)}));
         }
@@ -218,13 +211,13 @@ int main(int argc, char **argv) {
             if (argc < 4) return emit(error_response(@"invalid_arguments"));
             NSString *identifier = [argument(argc, argv, 2) uppercaseString];
             BOOL enabled = strcmp(argv[3], "1") == 0;
-            id alarm = find_alarm(identifier);
+            id alarm = find_alarm(identifier, NULL);
             if (!alarm) return emit(error_response(@"alarm_not_found"));
             id mutable = ((id (*)(id, SEL))objc_msgSend)(alarm, sel_registerName("mutableCopy"));
             ((VoidSetterBool)objc_msgSend)(mutable, sel_registerName("setEnabled:"), enabled);
             ((VoidCallObject)objc_msgSend)(manager, sel_registerName("updateAlarm:"), mutable);
             usleep(400000);
-            id updated = find_alarm(identifier);
+            id updated = find_alarm(identifier, NULL);
             if (!updated) return emit(response(@"partial", @{@"reason": @"update_not_confirmed"}));
             NSDictionary *row = alarm_description(updated);
             if ([row[@"enabled"] boolValue] != enabled)
@@ -234,12 +227,17 @@ int main(int argc, char **argv) {
         if ([command isEqualToString:@"delete"]) {
             if (argc < 3) return emit(error_response(@"invalid_arguments"));
             NSString *identifier = [argument(argc, argv, 2) uppercaseString];
-            id alarm = find_alarm(identifier);
+            BOOL complete = NO;
+            id alarm = find_alarm(identifier, &complete);
+            if (!complete) return emit(response(@"unavailable", @{@"reason": @"alarms_unavailable"}));
             if (!alarm) return emit(error_response(@"alarm_not_found"));
             ((VoidCallObject)objc_msgSend)(manager, sel_registerName("removeAlarm:"), alarm);
             usleep(400000);
-            if (find_alarm(identifier)) return emit(response(@"partial", @{@"reason": @"delete_not_confirmed"}));
-            return emit(response(@"verified", @{@"deleted": @YES, @"alarm_id": identifier}));
+            id still = find_alarm(identifier, &complete);
+            if (!complete) return emit(response(@"partial", @{@"reason": @"readback_unavailable", @"alarm_id": identifier}));
+            if (still) return emit(response(@"partial", @{@"reason": @"delete_not_confirmed"}));
+            return emit(response(@"verified", @{@"deleted": @YES, @"alarm_id": identifier,
+                                                @"readback_complete": @YES}));
         }
         return emit(error_response(@"unsupported_command"));
     }

@@ -10,13 +10,15 @@
 
 ## 已完成和未完成
 
+当前为 0.12.0，已修复 [审查中的 10 项问题](docs/review-fixes-0.12.0.md)。SpringBoard 采用受限 Unix socket v2，旧文件 mailbox 不再支持。125 项 Python 测试、19 项原生隔离检查、14 项真机检查通过；活动正文变化的真机验收因测试 App 未进前台而待补，离线回归已通过。
+
 - 已实现并在迁移后的独立目录验证（0.11.0）：`device.info`、`activities.get` / `activities.watch`、音量/亮度/低电量模式/方向锁定的 `settings.get` / `settings.set`、Wi-Fi/飞行模式/蓝牙只读、系统闹钟 `alarms.*`、日历与事件 `calendar.*`、提醒事项 `reminders.*`、`browser.search` / `read` / `open`、`weather.current` / `forecast`、`files.list` / `search` / `read`。
 - 原生实时活动读取器支持当前 iOS 16.1.1 / 20B101 上的跨 App 原始正文、Attributes 和状态读取。单次查询不是常驻监听。
 - 统一入口为 `bin/iosctl`，Python 3.9+；接口结果为 JSON，协议在 `schemas/`。
 - Wi-Fi/蓝牙/飞行模式/蜂窝/专注模式的可写控制及常驻监听仍未实现。系统闹钟已通过私有 `MobileTimer.framework` 实现；日历已通过私有 EventKit + TCC entitlement 实现；提醒事项已通过私有 ReminderKit `REMStore` 实现。Wi-Fi/飞行模式/蓝牙已提供只读状态，写入返回 `read_only_setting`；蓝牙 `setEnabled:` 在 CLI 与 SpringBoard 均未生效，Wi-Fi/飞行模式写入存在断网风险。注册表中的 planned 操作必须返回 `unavailable/not_implemented`。低电量模式、方向锁定和只读网络状态依赖可选 ElleKit bridge（`native/ellekit`，`tools/build_ellekit_bridge.py`）；未安装 bridge 时相关设置返回 `ellekit_bridge_unavailable`。
 - 浏览器 provider、天气 provider、文件边界、活动轮询和剩余阻塞项记录在 `docs/COMPLETION_REPORT.md` 与 `evidence/features-0.5.0.json`。
 - 设置适配器当前支持 `volume`（`AVSystemController`，`Audio/Video` 类别）和 `brightness`（`BrightnessSystemClient`，`DisplayBrightness`），取值均为 0.0-1.0。原生 helper 位于 `native/settings/settings.m`；`browser.open` 的 helper 位于 `native/browser/open_url.m`；`tools/build_native.py` 一次构建 `build/native/icb-activities`、`icb-settings` 和 `icb-open-url`。
-- 当前测试为 62 项 Python 测试（0.5.0），并在真机验证文件、浏览器、天气与活动监测；迁移期 18 项测试与 8 项手机检查的证据仍在 [migration-summary.json](evidence/migration-summary.json)。
+- 0.5.0、0.11.0 与迁移期报告保留为历史证据；当前修复和验证以 [review-fixes-0.12.0.json](evidence/review-fixes-0.12.0.json) 为准，不将历史空目标轮询当成正文变化验收。
 
 不能将旧原生二进制的历史结果当成后续修改的验证，也不能将 planned 能力说成已完成。
 
@@ -45,7 +47,7 @@
 
 ## 下一块工作
 
-媒体音量与屏幕亮度已完成读写闭环；文件、浏览器、天气和有界活动监测已完成 0.5.0 真机验收。下一步优先研究系统闹钟与提醒事项的真实接口和授权路径，并在不产生网络断开或可听副作用的前提下继续设置项；网络开关、会响铃的闹钟、个人提醒事项不作为无关的探测副作用。
+系统服务适配器与审查修复已有实现。下一步在测试 App 可进前台时补活动正文变化的真机闭环，再按 [iOS computer-use 研究](docs/ios-computer-use.md) 研究只读截图与单次点击原型。UI 后端及 MCP 工具尚未实现；不要把研究草案当已安装能力。
 
 新增设置适配器优先放在 `native/settings`，通过固定参数或 JSON 与 CLI 连接。遵守 [AGENTS.md](AGENTS.md)；检查实际方法签名、线程要求、权限与系统版本，不按 root 身份推断接口可用。当前目标是系统真实功能，不能用普通通知代替系统时钟里的闹钟，也不改未知私人数据库。
 

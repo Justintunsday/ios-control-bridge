@@ -12,7 +12,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.11.0"
+VERSION = "0.12.0"
 
 
 def run(args, seconds=120):

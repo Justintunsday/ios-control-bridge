@@ -128,7 +128,8 @@ def watch_activity(params, request_id=None):
     deadline = time.monotonic() + duration_ms / 1000.0
     samples = []
     changes = 0
-    previous_state = None
+    unobserved = object()
+    previous_state = unobserved
     stopped_early = False
     target_found_ever = False
     while True:
@@ -142,14 +143,16 @@ def watch_activity(params, request_id=None):
         target_found = payload.get("target_found") is True
         target_found_ever = target_found_ever or target_found
         state = _activity_state(payload) if target_found else None
+        content = payload.get("content") if target_found else None
+        observed = {"target_found": target_found, "state": state, "content": content}
         samples.append({"observed_at": probe.get("observed_at"), "target_found": target_found,
-                        "state": state})
-        if previous_state is not None and state != previous_state:
+                        "state": state, "content": content})
+        if previous_state is not unobserved and observed != previous_state:
             changes += 1
             if stop_on_change:
                 stopped_early = True
                 break
-        previous_state = state
+        previous_state = observed
         if time.monotonic() >= deadline:
             break
         time.sleep(interval_ms / 1000.0)

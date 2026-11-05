@@ -98,12 +98,18 @@ class AlarmBoundaryTests(unittest.TestCase):
         self.assertEqual(set_enabled({"alarm_id": ID, "enabled": 0})["reason"], "invalid_enabled")
 
     def test_delete(self):
-        with self.mock_run(payload(deleted=True, alarm_id=ID)):
+        with self.mock_run(payload(deleted=True, alarm_id=ID, readback_complete=True)):
             output = delete_alarm({"alarm_id": ID})
         self.assertEqual(output["status"], "verified")
 
     def test_invalid_alarm_id(self):
         self.assertEqual(delete_alarm({"alarm_id": "not-a-uuid"})["reason"], "invalid_alarm_id")
+
+    def test_delete_cannot_verify_without_complete_query(self):
+        with self.mock_run(payload(deleted=True, alarm_id=ID)):
+            self.assertEqual(delete_alarm({"alarm_id": ID})["reason"], "native_delete_inconsistent")
+        with self.mock_run(payload(status="partial", reason="readback_unavailable"), exit_code=2):
+            self.assertEqual(delete_alarm({"alarm_id": ID})["status"], "partial")
 
     def test_unverified_build_does_not_start_helper(self):
         with patch("ios_control_bridge.alarms.ios_version",

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 /*
  * Fixed-purpose EventKit calendar adapter.
@@ -70,6 +71,7 @@ static NSDictionary *event_description(EKEvent *event) {
         @"calendar_id": event.calendar.calendarIdentifier ?: @"",
         @"start": event.startDate ? @([event.startDate timeIntervalSince1970]) : [NSNull null],
         @"end": event.endDate ? @([event.endDate timeIntervalSince1970]) : [NSNull null],
+        @"notes": event.notes ?: @"",
         @"all_day": @(event.isAllDay),
     };
 }
@@ -145,16 +147,14 @@ int main(int argc, char **argv) {
             if (!saved) {
                 return emit(error_response(error.localizedDescription ?: @"save_failed"));
             }
-            EKCalendar *saved_calendar = nil;
-            for (EKCalendar *candidate in event_calendars(store)) {
-                if ([candidate.calendarIdentifier isEqualToString:calendar.calendarIdentifier] ||
-                    [candidate.title isEqualToString:title]) {
-                    saved_calendar = candidate;
-                    break;
-                }
-            }
+            NSString *created_id = calendar.calendarIdentifier;
+            EKCalendar *saved_calendar = created_id.length ? [store calendarWithIdentifier:created_id] : nil;
             if (!saved_calendar) return emit(response(@"partial", @{@"reason": @"create_not_confirmed"}));
-            return emit(response(@"verified", @{@"calendar": calendar_description(saved_calendar)}));
+            if (![saved_calendar.title isEqualToString:title] ||
+                ![saved_calendar.source.sourceIdentifier isEqualToString:source.sourceIdentifier])
+                return emit(response(@"partial", @{@"reason": @"readback_mismatch", @"created_id": created_id}));
+            return emit(response(@"verified", @{@"calendar": calendar_description(saved_calendar),
+                                                @"created_id": created_id}));
         }
         if ([command isEqualToString:@"events"]) {
             if (argc < 5) return emit(error_response(@"invalid_arguments"));
@@ -168,12 +168,33 @@ int main(int argc, char **argv) {
             NSPredicate *predicate = [store predicateForEventsWithStartDate:start endDate:end
                                                                     calendars:@[calendar]];
             NSArray<EKEvent *> *events = [store eventsMatchingPredicate:predicate];
-            NSMutableArray *rows = [NSMutableArray array];
-            for (EKEvent *event in events) {
-                if (rows.count >= 100) break;
-                [rows addObject:event_description(event)];
+            if (!events) return emit(response(@"unavailable", @{@"reason": @"events_unavailable"}));
+            long limit = 100, offset = 0; char *endptr = NULL;
+            if (argc >= 6) {
+                limit = strtol(argv[5], &endptr, 10);
+                if (!argv[5][0] || *endptr || limit < 1 || limit > 500)
+                    return emit(error_response(@"invalid_limit"));
             }
-            return emit(response(@"verified", @{@"events": rows, @"count": @(rows.count)}));
+            if (argc >= 7) {
+                offset = strtol(argv[6], &endptr, 10);
+                if (!argv[6][0] || *endptr || offset < 0 || offset > 100000)
+                    return emit(error_response(@"invalid_offset"));
+            }
+            events = [events sortedArrayUsingComparator:^NSComparisonResult(EKEvent *a, EKEvent *b) {
+                NSComparisonResult order = [a.startDate compare:b.startDate];
+                return order == NSOrderedSame ? [a.eventIdentifier compare:b.eventIdentifier] : order;
+            }];
+            NSMutableArray *rows = [NSMutableArray array];
+            for (NSUInteger index = (NSUInteger)offset; index < events.count && rows.count < (NSUInteger)limit; index++) {
+                [rows addObject:event_description(events[index])];
+            }
+            BOOL truncated = (NSUInteger)offset + rows.count < events.count;
+            BOOL complete = offset == 0 && !truncated;
+            return emit(response(complete ? @"verified" : @"partial", @{
+                @"events": rows, @"count": @(rows.count), @"total": @(events.count),
+                @"limit": @(limit), @"offset": @(offset), @"truncated": @(truncated),
+                @"complete_for_scope": @(complete),
+                @"next_offset": truncated ? @((NSUInteger)offset + rows.count) : (id)[NSNull null]}));
         }
         if ([command isEqualToString:@"event_create"]) {
             if (argc < 6) return emit(error_response(@"invalid_arguments"));
@@ -198,6 +219,13 @@ int main(int argc, char **argv) {
             if (!saved) return emit(error_response(error.localizedDescription ?: @"save_failed"));
             EKEvent *verified = event.eventIdentifier ? [store eventWithIdentifier:event.eventIdentifier] : nil;
             if (!verified) return emit(response(@"partial", @{@"reason": @"create_not_confirmed"}));
+            if (![verified.calendar.calendarIdentifier isEqualToString:calendar_id] ||
+                ![verified.title isEqualToString:title] ||
+                fabs([verified.startDate timeIntervalSinceDate:start]) >= 0.001 ||
+                fabs([verified.endDate timeIntervalSinceDate:end]) >= 0.001 ||
+                ![(verified.notes ?: @"") isEqualToString:notes])
+                return emit(response(@"partial", @{@"reason": @"readback_mismatch",
+                                                   @"event": event_description(verified)}));
             return emit(response(@"verified", @{@"event": event_description(verified)}));
         }
         if ([command isEqualToString:@"event_delete"]) {

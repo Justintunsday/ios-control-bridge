@@ -24,14 +24,14 @@ class WatchBoundaryTests(unittest.TestCase):
         self.addCleanup(self.helper.stop)
         self.addCleanup(self.temp.cleanup)
 
-    def probe(self, target_found=False, state=None, status="verified"):
+    def probe(self, target_found=False, state=None, status="verified", content=None):
         activity = None
         if target_found:
             activity = {"descriptor": {"id": ID}, "state": state or {"active": {}}}
         return {"status": status, "observed_at": "2026-01-01T00:00:00Z",
                 "request_id": "00000000-0000-0000-0000-000000000000",
                 "data": {"schema": NATIVE_SCHEMA, "source": NATIVE_SOURCE,
-                         "target_found": target_found, "activity": activity}}
+                         "target_found": target_found, "activity": activity, "content": content}}
 
     def test_validation(self):
         self.assertEqual(watch_activity({})["reason"], "invalid_activity_id")
@@ -70,6 +70,29 @@ class WatchBoundaryTests(unittest.TestCase):
             output = watch_activity({"activity_id": ID, "duration_ms": 1000})
         self.assertEqual(output["status"], "unavailable")
         self.assertEqual(output["reason"], "native_process_timeout")
+
+    def run_samples(self, probes):
+        with patch("ios_control_bridge.activities.get_activity", side_effect=probes), \
+             patch("ios_control_bridge.activities.time.monotonic", side_effect=[0, 0, 2]), \
+             patch("ios_control_bridge.activities.time.sleep"):
+            return watch_activity({"activity_id": ID, "duration_ms": 1000, "stop_on_change": True})
+
+    def test_body_change_while_active_is_detected_and_preserved(self):
+        output = self.run_samples([self.probe(True, content={"value": 10}),
+                                   self.probe(True, content={"value": 20})])
+        self.assertTrue(output["data"]["changed"])
+        self.assertTrue(output["data"]["stopped_early"])
+        self.assertEqual(output["data"]["samples"][-1]["content"], {"value": 20})
+
+    def test_appearance_and_disappearance_are_changes(self):
+        for samples in ([self.probe(), self.probe(True, content={})],
+                        [self.probe(True, content={}), self.probe()]):
+            self.assertTrue(self.run_samples(samples)["data"]["changed"])
+
+    def test_equal_body_with_different_json_key_order_is_not_change(self):
+        output = self.run_samples([self.probe(True, content={"a": 1, "b": 2}),
+                                   self.probe(True, content={"b": 2, "a": 1})])
+        self.assertFalse(output["data"]["changed"])
 
 
 if __name__ == "__main__":

@@ -12,13 +12,15 @@ import os
 from pathlib import Path
 import plistlib
 import shutil
+import stat
 import subprocess
 import sys
 import time
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TWEAK_DIR = Path("/var/jb/usr/lib/TweakInject")
-COMMAND_DIR = Path("/var/jb/var/lib/icb")
+COMMAND_DIR = Path("/var/jb/var/run/ios-control-bridge")
 DEFAULT_SDK = Path("/var/jb/opt/sdks/iPhoneOS16.5.sdk")
 
 
@@ -40,11 +42,13 @@ def main():
     parser.add_argument("--sdk", default=os.environ.get("ICB_SDK", str(DEFAULT_SDK)))
     parser.add_argument("--respring", action="store_true",
                         help="restart SpringBoard after installation")
+    parser.add_argument("--build-only", action="store_true", help="build without installing or restarting")
     args = parser.parse_args()
     if sys.platform != "darwin":
         raise RuntimeError("build requires the device Apple toolchain")
     if os.geteuid() != 0:
         raise RuntimeError("run as root: sudo python3 tools/build_ellekit_bridge.py")
+    import pwd
     sdk = Path(args.sdk)
     if not sdk.is_dir():
         raise RuntimeError("set ICB_SDK or --sdk to an installed iPhoneOS SDK")
@@ -52,27 +56,59 @@ def main():
     if not all(tools.values()):
         raise RuntimeError("clang and ldid are required")
     source = ROOT / "native/ellekit"
-    binary = Path("/tmp/icbridge-%d.dylib" % os.getpid())
+    build = ROOT / "build/native"
+    build.mkdir(parents=True, exist_ok=True)
+    stage = Path(tempfile.mkdtemp(prefix="ellekit-", dir=str(build)))
+    binary = stage / "icbridge.dylib"
     steps = [
         run([tools["clang"], "-target", "arm64e-apple-ios16.1", "-isysroot", sdk,
              "-dynamiclib", "-fno-objc-arc", "-O1", "-Wall",
              source / "SpringBridge.m", "-framework", "Foundation", "-o", binary]),
         run([tools["ldid"], "-S", binary], 20),
     ]
-    TWEAK_DIR.mkdir(parents=True, exist_ok=True)
-    COMMAND_DIR.mkdir(parents=True, exist_ok=True)
-    os.chmod(COMMAND_DIR, 0o777)
-    destination = TWEAK_DIR / "icbridge.dylib"
-    os.replace(binary, destination)
-    os.chmod(destination, 0o755)
-    os.chown(destination, 0, 0)
     plist = plistlib.loads((source / "icbridge.plist").read_bytes())
     plist_path = TWEAK_DIR / "icbridge.plist"
-    plist_path.write_bytes(plistlib.dumps(plist, fmt=plistlib.FMT_BINARY))
-    os.chmod(plist_path, 0o644)
-    os.chown(plist_path, 0, 0)
-    if args.respring:
-        subprocess.run(["/var/jb/usr/bin/killall", "-9", "SpringBoard"], check=False)
+    destination, backup = binary, None
+    if not args.build_only:
+        mobile = pwd.getpwnam("mobile")
+        TWEAK_DIR.mkdir(parents=True, exist_ok=True)
+        if COMMAND_DIR.is_symlink():
+            raise RuntimeError("refusing a symlink for the IPC directory")
+        COMMAND_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+        info = COMMAND_DIR.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid not in (0, mobile.pw_uid):
+            raise RuntimeError("untrusted IPC directory owner")
+        os.chmod(COMMAND_DIR, 0o700)
+        os.chown(COMMAND_DIR, mobile.pw_uid, mobile.pw_gid)
+        legacy = Path("/var/jb/var/lib/icb")
+        if legacy.exists() or legacy.is_symlink():
+            old = legacy.lstat()
+            if not stat.S_ISDIR(old.st_mode) or old.st_uid != 0:
+                raise RuntimeError("untrusted legacy IPC directory")
+            # The v2 server never reads these old commands; retain them only for recovery.
+            os.chmod(legacy, 0o700)
+        backup = ROOT / "local" / ("ellekit-backup-%d" % time.time_ns())
+        backup.mkdir(mode=0o700, parents=True)
+        for name in ("icbridge.dylib", "icbridge.plist"):
+            old = TWEAK_DIR / name
+            if old.is_symlink():
+                raise RuntimeError("refusing a symlink in the tweak installation")
+            if old.is_file():
+                shutil.copy2(old, backup / name)
+        destination = TWEAK_DIR / "icbridge.dylib"
+        os.chmod(binary, 0o755)
+        os.chown(binary, 0, 0)
+        os.replace(binary, destination)
+        fd, temporary = tempfile.mkstemp(prefix="icbridge-", dir=str(TWEAK_DIR))
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(plistlib.dumps(plist, fmt=plistlib.FMT_BINARY))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o644)
+        os.chown(temporary, 0, 0)
+        os.replace(temporary, plist_path)
+        if args.respring:
+            run(["/var/jb/usr/bin/killall", "-9", "SpringBoard"], 10)
     manifest = {
         "project": "ios-control-bridge",
         "component": "ellekit-springbridge",
@@ -82,8 +118,13 @@ def main():
         "binary_sha256": digest(destination),
         "plist": str(plist_path),
         "command_directory": str(COMMAND_DIR),
+        "protocol": "ios-control-bridge.spring.v2",
+        "build_only": args.build_only,
+        "backup_directory": str(backup) if backup else None,
         "source_sha256": {
             "SpringBridge.m": digest(source / "SpringBridge.m"),
+            "SocketServer.h": digest(source / "SocketServer.h"),
+            "RuntimeABI.h": digest(source.parent / "common/RuntimeABI.h"),
             "icbridge.plist": digest(source / "icbridge.plist"),
         },
         "steps": steps,

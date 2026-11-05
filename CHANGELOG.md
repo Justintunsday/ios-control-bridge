@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0 — Fix review findings and replace the SpringBoard mailbox
+
+- Replace shared command/result files with a peer-authenticated local Unix socket, restrictive permissions, bounded framing, generation IDs, expiry checks and duplicate rejection. Remove the native Bluetooth write action.
+- Keep the arm64e shim transport in C and hold asynchronous radio/Bluetooth managers for the process lifetime. Recoverable installation attempts and the final device checks are documented in `docs/review-fixes-0.12.0.md`.
+- Confirm created calendars/reminders by new stable ID and account/list, and distinguish failed deletion readback from confirmed absence.
+- Detect Live Activity body, lifecycle and presence changes; retain body samples.
+- Add sorted calendar event pagination with truthful completeness, and verify event times and notes after creation.
+- Preserve filesystem search failures and return relative match locations.
+- Validation: 125 Python tests on Windows and device, 19 native fixture checks, 14 dedicated device checks. Real Live Activity change acceptance awaits the test App entering the foreground; its body-change regression passes offline.
+
 ## 0.11.0 — Reminders through private ReminderKit
 
 - Add `native/reminders/RemindersBridge.m` using ReminderKit `REMStore` and `REMSaveRequest`.

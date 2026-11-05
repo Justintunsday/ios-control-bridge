@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "../common/RuntimeABI.h"
+#include "SocketServer.h"
 
 /*
  * ElleKit SpringBoard bridge for settings that require SpringBoard context.
@@ -22,23 +24,11 @@
  * execution.
  */
 
-#define COMMAND_PATH "/var/jb/var/lib/icb/spring.cmd"
-#define RESULT_PATH "/var/jb/var/lib/icb/spring.result"
-#define RESULT_TMP "/var/jb/var/lib/icb/spring.result.tmp"
 
 typedef long long (*LongGetter)(id, SEL);
 typedef BOOL (*BoolGetter)(id, SEL);
 typedef void (*VoidCall)(id, SEL);
 typedef BOOL (*BoolSetter)(id, SEL, long long, id);
-typedef BOOL (*BoolSetterSimple)(id, SEL, BOOL);
-
-typedef struct {
-    char id[128];
-    char action[64];
-    int value;
-} Command;
-
-static char last_id[128] = {0};
 
 static id string_with_utf8(const char *value) {
     Class cls = objc_getClass("NSString");
@@ -52,7 +42,7 @@ static id shared_instance_named(const char *class_name, const char *selector_nam
         return nil;
     }
     SEL selector = sel_registerName(selector_name);
-    if (!class_respondsToSelector(object_getClass(cls), selector)) {
+    if (!ICBABI((id)cls, selector_name, "@16@0:8")) {
         return nil;
     }
     return ((id (*)(id, SEL))objc_msgSend)((id)cls, selector);
@@ -60,7 +50,7 @@ static id shared_instance_named(const char *class_name, const char *selector_nam
 
 static bool execute_low_power_get(char *detail, size_t detail_size, int *value) {
     id manager = shared_instance_named("_PMLowPowerMode", "sharedInstance");
-    if (!manager) {
+    if (!ICBABI(manager, "getPowerMode", "q16@0:8")) {
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
@@ -70,16 +60,19 @@ static bool execute_low_power_get(char *detail, size_t detail_size, int *value) 
     return true;
 }
 
-static bool execute_low_power_set(int value, char *detail, size_t detail_size, int *readback) {
+static bool execute_low_power_set(Command *command, char *detail, size_t detail_size, int *readback) {
     id manager = shared_instance_named("_PMLowPowerMode", "sharedInstance");
-    if (!manager) {
+    if (!ICBABI(manager, "setPowerMode:fromSource:", "B32@0:8q16@24")
+        || !ICBABI(manager, "getPowerMode", "q16@0:8")) {
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
+    if (icb_now_ms() >= command->deadline_ms || !icb_connected(command->socket_fd)) {
+        snprintf(detail, detail_size, "request_expired_or_disconnected"); return false;
+    }
     id source = string_with_utf8("ios-control-bridge");
     ((BoolSetter)objc_msgSend)(manager, sel_registerName("setPowerMode:fromSource:"),
-                               (long long)(value ? 1 : 0), source);
-    usleep(300000);
+                               (long long)(command->value ? 1 : 0), source);
     long long mode = ((LongGetter)objc_msgSend)(manager, sel_registerName("getPowerMode"));
     *readback = mode != 0 ? 1 : 0;
     snprintf(detail, detail_size, "power_mode=%lld", mode);
@@ -88,7 +81,7 @@ static bool execute_low_power_set(int value, char *detail, size_t detail_size, i
 
 static bool execute_orientation_get(char *detail, size_t detail_size, int *value) {
     id manager = shared_instance_named("SBOrientationLockManager", "sharedInstance");
-    if (!manager) {
+    if (!ICBABI(manager, "isUserLocked", "B16@0:8")) {
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
@@ -98,18 +91,21 @@ static bool execute_orientation_get(char *detail, size_t detail_size, int *value
     return true;
 }
 
-static bool execute_orientation_set(int value, char *detail, size_t detail_size, int *readback) {
+static bool execute_orientation_set(Command *command, char *detail, size_t detail_size, int *readback) {
     id manager = shared_instance_named("SBOrientationLockManager", "sharedInstance");
-    if (!manager) {
+    if (!ICBABI(manager, command->value ? "lock" : "unlock", "v16@0:8")
+        || !ICBABI(manager, "isUserLocked", "B16@0:8")) {
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
-    if (value) {
+    if (icb_now_ms() >= command->deadline_ms || !icb_connected(command->socket_fd)) {
+        snprintf(detail, detail_size, "request_expired_or_disconnected"); return false;
+    }
+    if (command->value) {
         ((VoidCall)objc_msgSend)(manager, sel_registerName("lock"));
     } else {
         ((VoidCall)objc_msgSend)(manager, sel_registerName("unlock"));
     }
-    usleep(300000);
     BOOL locked = ((BoolGetter)objc_msgSend)(manager, sel_registerName("isUserLocked"));
     *readback = locked ? 1 : 0;
     snprintf(detail, detail_size, "isUserLocked=%d", locked ? 1 : 0);
@@ -118,7 +114,8 @@ static bool execute_orientation_set(int value, char *detail, size_t detail_size,
 
 static bool execute_wifi_get(char *detail, size_t detail_size, int *value) {
     id manager = shared_instance_named("HSWiFiManager", "sharedWiFiManager");
-    if (!manager) {
+    if (!ICBABI(manager, "isWiFiEnabled", "B16@0:8")
+        || !ICBABI(manager, "isWiFiAssociated", "B16@0:8")) {
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
@@ -130,8 +127,10 @@ static bool execute_wifi_get(char *detail, size_t detail_size, int *value) {
 }
 
 static bool execute_bluetooth_get(char *detail, size_t detail_size, int *value) {
-    void *handle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager",
-                          RTLD_LAZY | RTLD_LOCAL);
+    static void *handle = NULL;
+    static id manager = nil;
+    if (!handle) handle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager",
+                                RTLD_LAZY | RTLD_LOCAL);
     if (!handle) {
         snprintf(detail, detail_size, "framework_unavailable");
         return false;
@@ -141,11 +140,16 @@ static bool execute_bluetooth_get(char *detail, size_t detail_size, int *value) 
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
-    id manager = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
-    manager = ((id (*)(id, SEL))objc_msgSend)(manager, sel_registerName("init"));
+    if (!manager) {
+        manager = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
+        manager = ((id (*)(id, SEL))objc_msgSend)(manager, sel_registerName("init"));
+    }
     if (!manager) {
         snprintf(detail, detail_size, "init_failed");
         return false;
+    }
+    if (!ICBABI(manager, "enabled", "B16@0:8")) {
+        snprintf(detail, detail_size, "abi_mismatch"); return false;
     }
     BOOL enabled = ((BoolGetter)objc_msgSend)(manager, sel_registerName("enabled"));
     *value = enabled ? 1 : 0;
@@ -153,58 +157,29 @@ static bool execute_bluetooth_get(char *detail, size_t detail_size, int *value) 
     return true;
 }
 
-static bool execute_bluetooth_set(int value, char *detail, size_t detail_size, int *readback) {
-    void *handle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager",
-                          RTLD_LAZY | RTLD_LOCAL);
-    if (!handle) {
-        snprintf(detail, detail_size, "framework_unavailable");
-        return false;
-    }
-    Class cls = objc_getClass("BluetoothManager");
-    if (!cls) {
-        snprintf(detail, detail_size, "class_unavailable");
-        return false;
-    }
-    id manager = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
-    manager = ((id (*)(id, SEL))objc_msgSend)(manager, sel_registerName("init"));
-    if (!manager) {
-        snprintf(detail, detail_size, "init_failed");
-        return false;
-    }
-    BOOL accepted = ((BoolSetterSimple)objc_msgSend)(manager, sel_registerName("setEnabled:"), value ? YES : NO);
-    usleep(800000);
-    BOOL enabled = ((BoolGetter)objc_msgSend)(manager, sel_registerName("enabled"));
-    *readback = enabled ? 1 : 0;
-    snprintf(detail, detail_size, "accepted=%d enabled=%d", accepted ? 1 : 0, enabled ? 1 : 0);
-    return true;
-}
 
 static bool execute_airplane_get(char *detail, size_t detail_size, int *value) {
+    static id preferences = nil;
     Class cls = objc_getClass("RadiosPreferences");
     if (!cls) {
         snprintf(detail, detail_size, "class_unavailable");
         return false;
     }
-    id preferences = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
-    preferences = ((id (*)(id, SEL))objc_msgSend)(preferences, sel_registerName("init"));
+    if (!preferences) {
+        preferences = ((id (*)(id, SEL))objc_msgSend)((id)cls, sel_registerName("alloc"));
+        preferences = ((id (*)(id, SEL))objc_msgSend)(preferences, sel_registerName("init"));
+    }
     if (!preferences) {
         snprintf(detail, detail_size, "init_failed");
         return false;
+    }
+    if (!ICBABI(preferences, "airplaneMode", "B16@0:8")) {
+        snprintf(detail, detail_size, "abi_mismatch"); return false;
     }
     BOOL enabled = ((BoolGetter)objc_msgSend)(preferences, sel_registerName("airplaneMode"));
     *value = enabled ? 1 : 0;
     snprintf(detail, detail_size, "airplaneMode=%d", enabled ? 1 : 0);
     return true;
-}
-
-static void write_result(const char *id, const char *status, int value, const char *detail) {
-    FILE *file = fopen(RESULT_TMP, "w");
-    if (!file) {
-        return;
-    }
-    fprintf(file, "%s\n%s\n%d\n%s\n", id, status, value, detail);
-    fclose(file);
-    rename(RESULT_TMP, RESULT_PATH);
 }
 
 static void execute(Command *command) {
@@ -214,71 +189,31 @@ static void execute(Command *command) {
     if (strcmp(command->action, "get_low_power") == 0) {
         ok = execute_low_power_get(detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "set_low_power") == 0) {
-        ok = execute_low_power_set(command->value, detail, sizeof(detail), &readback);
+        ok = execute_low_power_set(command, detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "get_orientation_lock") == 0) {
         ok = execute_orientation_get(detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "set_orientation_lock") == 0) {
-        ok = execute_orientation_set(command->value, detail, sizeof(detail), &readback);
+        ok = execute_orientation_set(command, detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "get_wifi") == 0) {
         ok = execute_wifi_get(detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "get_airplane") == 0) {
         ok = execute_airplane_get(detail, sizeof(detail), &readback);
     } else if (strcmp(command->action, "get_bluetooth") == 0) {
         ok = execute_bluetooth_get(detail, sizeof(detail), &readback);
-    } else if (strcmp(command->action, "set_bluetooth") == 0) {
-        ok = execute_bluetooth_set(command->value, detail, sizeof(detail), &readback);
     } else {
-        write_result(command->id, "error", -1, "unsupported_action");
+        snprintf(command->status, sizeof(command->status), "error");
+        snprintf(command->detail, sizeof(command->detail), "unsupported_action");
         return;
     }
-    write_result(command->id, ok ? "ok" : "unavailable", readback, detail);
-}
-
-static void execute_on_main(void *context) {
-    Command *command = (Command *)context;
-    @autoreleasepool {
-        execute(command);
-    }
-    free(command);
-}
-
-static void process_command(void) {
-    FILE *file = fopen(COMMAND_PATH, "r");
-    if (!file) {
-        return;
-    }
-    char id[128] = {0};
-    char action[64] = {0};
-    char value_text[32] = {0};
-    if (!fgets(id, sizeof(id), file) || !fgets(action, sizeof(action), file) ||
-        !fgets(value_text, sizeof(value_text), file)) {
-        fclose(file);
-        return;
-    }
-    fclose(file);
-    id[strcspn(id, "\r\n")] = 0;
-    action[strcspn(action, "\r\n")] = 0;
-    if (id[0] == 0 || action[0] == 0 || strcmp(id, last_id) == 0) {
-        return;
-    }
-    snprintf(last_id, sizeof(last_id), "%s", id);
-    Command *command = (Command *)calloc(1, sizeof(Command));
-    if (!command) {
-        return;
-    }
-    snprintf(command->id, sizeof(command->id), "%s", id);
-    snprintf(command->action, sizeof(command->action), "%s", action);
-    command->value = atoi(value_text);
-    dispatch_async_f(dispatch_get_main_queue(), command, execute_on_main);
+    snprintf(command->status, sizeof(command->status), "%s", ok ? "ok" : "unavailable");
+    command->readback = readback;
+    snprintf(command->detail, sizeof(command->detail), "%s", detail);
 }
 
 static void *bridge_thread(void *argument) {
     (void)argument;
     sleep(5);
-    for (;;) {
-        process_command();
-        usleep(100000);
-    }
+    icb_serve();
     return NULL;
 }
 

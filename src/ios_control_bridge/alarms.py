@@ -234,7 +234,8 @@ def delete_alarm(params, request_id=None):
         return failure
     if payload["status"] != "verified":
         return _failed(operation, payload, request_id)
-    if payload.get("deleted") is not True or payload.get("alarm_id") != identifier:
+    if (payload.get("deleted") is not True or payload.get("alarm_id") != identifier
+            or payload.get("readback_complete") is not True):
         return result(operation, "error", reason="native_delete_inconsistent", request_id=request_id)
     return result(operation, "verified", data=payload, source=NATIVE_SOURCE,
                   request_id=request_id, complete=True)

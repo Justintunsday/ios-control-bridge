@@ -1,0 +1,104 @@
+{
+  "schema": "ios-control-bridge.evidence.review-fixes.v1",
+  "version": "0.12.0",
+  "observed_at": "2026-11-04T23:51:36.501564+00:00",
+  "device_build": "20B101",
+  "python_tests": {
+    "count": 125,
+    "passed": true,
+    "device_python": "3.9.9"
+  },
+  "native_fixtures": {
+    "status": "passed",
+    "scope": "native_fixture_no_personal_data_or_springboard_changes",
+    "checks": {
+      "alarm_failure": true,
+      "alarm_absent": true,
+      "alarm_present": true,
+      "reminder_failure": true,
+      "reminder_absent": true,
+      "reminder_present": true,
+      "reminder_duplicate": true,
+      "reminder_missing_id": true,
+      "calendar_duplicate": true,
+      "calendar_page1": true,
+      "calendar_page2": true,
+      "calendar_wrong_time": true,
+      "calendar_event": true,
+      "socket_expires_before_main_queue_execution": true,
+      "socket_disconnected_request_not_executed": true,
+      "socket_duplicate_request_not_replayed": true,
+      "socket_old_generation_not_replayed": true,
+      "socket_concurrent_clients_independent_serial_execution": true,
+      "socket_ignores_persistent_legacy_command": true
+    },
+    "count": 19
+  },
+  "device_acceptance": {
+    "status": "passed",
+    "checks": {
+      "same_title_calendars_have_distinct_new_ids": true,
+      "calendar_source_readback_matches": true,
+      "event_time_and_unicode_notes_readback": true,
+      "real_calendar_pagination_is_partial_and_nonoverlapping": true,
+      "same_title_reminders_have_distinct_new_ids": true,
+      "reminder_update_and_complete_use_new_id": true,
+      "orientation_write_readback": true,
+      "real_springboard_concurrent_clients": true,
+      "bluetooth_write_remains_unavailable": true,
+      "test_calendars_removed_original_ids_preserved": true,
+      "original_reminders_unchanged": true,
+      "test_reminders_removed": true,
+      "cleanup_all_reported_verified": true,
+      "orientation_restored": true
+    },
+    "count": 14,
+    "safe_mode_marker": false
+  },
+  "activity_acceptance": {
+    "status": "unavailable",
+    "reason": "test_app_not_foreground",
+    "scope": "no_activity_created_or_updated",
+    "safe_mode_marker": false
+  },
+  "final_stability": {
+    "observation_seconds": 15,
+    "same_springboard_process": true,
+    "new_crashes": 0,
+    "safe_mode_marker": false,
+    "repeated_bluetooth_and_orientation_reads": 15
+  },
+  "native_binaries": {
+    "icb-activities": {
+      "sha256": "93649214a44c7d88934df0be2eeb228eee01e4466efe1bee6422c1d97198501c"
+    },
+    "icb-settings": {
+      "sha256": "dfa4cf63e93c3d2656fe87afbeca991d0a0e6093eb4805a8f7462962814ec64f"
+    },
+    "icb-open-url": {
+      "sha256": "88ee4ce34ab39e842ceecb9ca675b8625cfea952761e6e4bb786fe389c5038a6"
+    },
+    "icb-alarms": {
+      "sha256": "aa2a1ce1c406b5398fe7275c67c10f01de8c4bd87f022eb42cc1a50a3dda9e19"
+    },
+    "icb-calendar": {
+      "sha256": "bbe45a4e9b18c591486bbe5eac0ee1476de108d8ab9c26ffa4041d6e09b7441e"
+    },
+    "icb-reminders": {
+      "sha256": "15295073c8246ae55552a823a570bb7928849b5e831ecc87c78fff825673f153"
+    }
+  },
+  "spring_bridge_sha256": "c911a2271f45fdb59d4411c589604ee16a9aad8c982ada04048f2ccaac9e3393",
+  "ipc": {
+    "directory_mode": "0o700",
+    "socket_mode": "0o600",
+    "legacy_directory_mode": "0o700"
+  },
+  "deployment_notes": [
+    "Two earlier installation attempts triggered safe mode and were rolled back.",
+    "Foundation collection/literal work was removed from the arm64e transport.",
+    "Bluetooth and radio managers now live for the SpringBoard process lifetime because callbacks are asynchronous.",
+    "The final installed version passed all read endpoints, delayed stability observation and dedicated test-data cleanup.",
+    "Real Live Activity content-change acceptance remains unavailable because the test App did not enter the foreground; no activity was created or updated."
+  ]
+}

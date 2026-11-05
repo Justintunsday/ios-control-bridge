@@ -4,6 +4,7 @@ import json
 import math
 import os
 import subprocess
+import time
 
 from . import ellekit_bridge
 from .device import ios_version
@@ -100,10 +101,11 @@ def _invoke(arguments, operation, request_id, expected_source):
 
 def _bridge_failure(operation, bridge_result, request_id):
     status = bridge_result.get("status")
-    mapped = {"ok": "verified", "unavailable": "unavailable", "error": "error"}.get(status)
+    mapped = {"ok": "error", "unavailable": "unavailable", "error": "error"}.get(status)
     if mapped is None:
         return result(operation, "error", reason="native_status_invalid", request_id=request_id)
-    return result(operation, mapped, reason=bridge_result.get("detail") or "bridge_failure",
+    return result(operation, mapped, reason="native_value_invalid" if status == "ok"
+                  else bridge_result.get("detail") or "bridge_failure",
                   data={"bridge": bridge_result}, request_id=request_id)
 
 
@@ -182,9 +184,13 @@ def _bridge_set(operation, setting, value, request_id):
     command = ellekit_bridge.request("set_" + setting, 1 if value else 0)
     if command.get("status") != "ok":
         return _bridge_failure(operation, command, request_id)
-    readback = ellekit_bridge.request("get_" + setting)
-    if readback.get("status") != "ok" or readback.get("value") not in (0, 1):
-        return _bridge_failure(operation, readback, request_id)
+    for attempt in range(6):
+        readback = ellekit_bridge.request("get_" + setting)
+        if readback.get("status") != "ok" or readback.get("value") not in (0, 1):
+            return _bridge_failure(operation, {**readback, "outcome_unknown": True}, request_id)
+        if bool(readback["value"]) == bool(value) or attempt == 5:
+            break
+        time.sleep(0.05)
     requested = bool(value)
     actual = bool(readback["value"])
     data = {"setting": setting, "before": bool(before["value"]), "requested": requested,

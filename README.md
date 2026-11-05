@@ -62,7 +62,9 @@ python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 
 所有 `call` 返回 `ios-control-bridge.result.v1` JSON，包含请求 ID、操作、观测时间、来源和范围完整性：`verified` / `partial` / `unavailable` / `error`，退出码分别为 `0 / 2 / 3 / 4`。完整查询没有目标，与查询失败分别表示。
 
-`settings.get` / `settings.set` 已对媒体音量和屏幕亮度实现并完成真机读写回环；`files.*`、`browser.*`、`weather.*` 与有界 `activities.watch` 也已实现。系统闹钟、提醒事项以及低电量、网络开关等其他设置项仍返回 `unavailable/not_implemented`，阻塞原因记录在完成报告中。写操作以用户明确指定的目标和值执行，修改后读回系统状态，不把发送成功等同于效果已验证。
+`settings.get/set`、系统闹钟、日历、提醒事项、文件、浏览器、天气及有界活动监测均有实现；网络与蓝牙设置仍只读。0.12.0 修复了创建对象身份、活动正文监测、删除读回和分页完整性，并将 SpringBoard 通道升级为本地 Unix socket。Python 与原生 helper 应成对升级，旧文件 mailbox 不再使用。写操作以用户明确指定的目标和值执行，修改后读回系统状态。
+
+`calendar.events` 支持 `limit`（1–500，默认 100）和 `offset`；分页或截断返回 `partial`，并提供 `total`、`next_offset` 和完整性信息。源日历在翻页期间变化时，客户端应重新查询。
 
 - [服务范围与验收](docs/services.md)
 - [架构与接口契约](docs/architecture.md)
@@ -72,6 +74,7 @@ python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 - [0.5.0 开发完成报告](docs/COMPLETION_REPORT.md)
 - [ElleKit SpringBoard bridge](docs/ELLEKIT_BRIDGE.md)
 - [接手开发说明与语言建议](HANDOFF.md)
+- [0.12.0 审查问题修复与验证](docs/review-fixes-0.12.0.md)
 
 本机测试：`python3 -m unittest discover -s tests -v`。真机结果只证明记录中的设备、系统 build 和操作；不将未来服务或其他 iOS 版本列为已验证。
 

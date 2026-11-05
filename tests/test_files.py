@@ -2,6 +2,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import os
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from ios_control_bridge.files import list_files, read_file, search_files
@@ -49,6 +51,32 @@ class FilesBoundaryTests(unittest.TestCase):
         output = search_files({"path": str(self.root), "query": "gamma", "max_depth": 2})
         self.assertEqual(output["status"], "verified")
         self.assertEqual([item["name"] for item in output["data"]["matches"]], ["gamma.txt"])
+        self.assertEqual(output["data"]["matches"][0]["relative_path"], str(Path("sub") / "gamma.txt"))
+
+    def test_search_root_permission_error_is_not_empty_success(self):
+        with patch("ios_control_bridge.files.os.scandir", side_effect=PermissionError()):
+            output = search_files({"path": str(self.root), "query": "anything"})
+        self.assertEqual(output["status"], "unavailable")
+        self.assertEqual(output["reason"], "permission_denied")
+        self.assertFalse(output["complete_for_scope"])
+
+    def test_search_child_permission_error_retains_readable_matches(self):
+        original = os.scandir
+        def scan(path):
+            if Path(path).name == "sub":
+                raise PermissionError()
+            return original(path)
+        with patch("ios_control_bridge.files.os.scandir", side_effect=scan):
+            output = search_files({"path": str(self.root), "query": "alpha"})
+        self.assertEqual(output["status"], "partial")
+        self.assertEqual(output["data"]["matches"][0]["relative_path"], "alpha.txt")
+        self.assertEqual(output["data"]["failed_directories"], 1)
+
+    def test_same_name_in_two_directories_has_distinct_locations(self):
+        (self.root / "sub" / "alpha.txt").write_text("second", encoding="utf8")
+        output = search_files({"path": str(self.root), "query": "alpha"})
+        locations = {row["relative_path"] for row in output["data"]["matches"]}
+        self.assertEqual(locations, {"alpha.txt", str(Path("sub") / "alpha.txt")})
 
     def test_read_returns_content(self):
         output = read_file({"path": str(self.root / "alpha.txt")})
