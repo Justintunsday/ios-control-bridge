@@ -1,94 +1,270 @@
 # iOS Control Bridge
 
-让 AI 或其他客户端通过独立、可验证的接口，读取并调整 iPhone 的常用系统服务。
+Query and control everyday iOS services from a terminal or an AI client.
 
-项目提供本机 `iosctl` JSON 命令和原生服务适配器，可在已有 SSH / 终端通道中运行。运行与构建不依赖编码代理服务器、AI SDK 或特定模型。当前设备适配以已越狱的 iOS 16.1.1 为起点，扩展到其他系统版本时逐项验证。
+[![Version](https://img.shields.io/badge/version-0.12.0-blue)](pyproject.toml)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB)](pyproject.toml)
+[![Device tested](https://img.shields.io/badge/device_tested-iOS_16.1.1-555555)](docs/verification.md)
 
-## 目标与当前状态
+A standalone Python CLI and native Objective-C/Swift helpers expose system
+settings, alarms, calendars, reminders, Live Activities, files and network
+queries through a consistent JSON interface. The Python core has no third-party
+runtime dependencies and works independently of any coding agent, model account
+or AI SDK.
 
-| 服务 | 目标 | 当前实现 |
+**Experimental, with device verification on iPhone SE 2 (iPhone12,8), iOS 16.1.1
+/ 20B101 and Dopamine rootless.** Private API support is verified per operation
+and OS build. See the [device reports](docs/verification.md) and
+[0.12.0 review and fixes](docs/review-fixes-0.12.0.md) for evidence and limits.
+
+## Implemented
+
+| Area | Operations or family | Details |
 | --- | --- | --- |
-| 设备信息 | 系统版本、型号、UID、bootstrap 证据 | 已实现，迁移后真机验证见文档 |
-| 实时活动 | 跨 App 正文、Attributes、状态和变化监测 | 按 ID 读取与有界轮询监测已实现；常驻监测待开发 |
-| 设置 / 控制中心 | Wi-Fi、蓝牙、蜂窝、飞行模式、亮度、音量、低电量、方向锁定、专注模式等的读取与调整 | 媒体音量、屏幕亮度、低电量模式、方向锁定已实现并真机验证；Wi-Fi、飞行模式、蓝牙为只读；低电量/方向锁定/只读状态通过可选 ElleKit SpringBoard bridge；其他设置项待实现 |
-| 闹钟 | 系统闹钟列表、创建、改时、重复、启停和删除 | 列表、创建、改时/标签、启停和删除已实现并真机验证（私有 MobileTimer 框架 + mobiletimerd entitlement） |
-| 提醒事项 | 清单、查询、新建、编辑、完成和删除 | 已实现并真机验证；使用私有 ReminderKit `REMStore`（EventKit 在该设备返回 0 个清单） |
-| 日历 | 日历列表、新建日历、删除指定日历；日历事件查询、新建、删除 | 日历与事件操作已实现并真机验证（私有 EventKit + TCC entitlement） |
-| 浏览器 / 网络查询 | 搜索结果、网页内容提取、打开指定页面 | 搜索、正文提取与 LaunchServices 打开已实现并真机验证 |
-| 天气 | 指定位置的实况、预报、来源及数据时间 | Open-Meteo 实况与预报已实现并真机验证 |
-| 文件 | 明确目录内的列举、检索和有界读取 | 统一接口已实现并真机验证 |
-| 可视界面操作 | 截图、点击、滑动、输入、返回桌面 | 可选 iOSRemoteBridge MCP 后端已接入并完成基础真机闭环；不属于 `iosctl` 操作，AX / 中文输入仍未实现 |
+| Device information | `device.info` | Model, OS build, execution identity and bootstrap evidence. |
+| Live Activities | `activities.get`, `activities.watch` | Read a selected activity's cross-app content and state; monitor changes with bounded polling. |
+| Settings | `settings.get`, `settings.set` | Read and change media volume, brightness, low power mode and orientation lock, with readback. Wi-Fi, airplane mode and Bluetooth are read-only. |
+| Alarms | `alarms.*` | List, create, update time/label, enable/disable and delete system Clock alarms through private MobileTimer APIs. |
+| Calendars | `calendar.*` | List/create/delete calendars and query/create/delete events through EventKit, with explicit IDs, date ranges and pagination. |
+| Reminders | `reminders.*` | List reminder lists; query, create, rename, complete and delete reminders through private ReminderKit APIs. |
+| Files | `files.list`, `files.search`, `files.read` | Bounded results and file reads under an explicitly supplied absolute path. |
+| Web queries | `browser.search`, `browser.read`, `browser.open` | Web search, page text extraction and requests to open HTTP(S) URLs through LaunchServices. |
+| Weather | `weather.current`, `weather.forecast` | Open-Meteo data for supplied coordinates, including provider attribution, units and timestamps. |
+| Visual automation | Optional iOSRemoteBridge MCP tools | Screenshots, taps, swipes, text input and Home. See [computer use](#ai-clients-and-computer-use) for setup and verification boundaries. |
 
-能力清单中 `implemented` 表示已有适配代码，`validation` 表示验证状态，`runtime.ready_to_query` 表示当前执行环境具备查询条件。声明中的未来能力不会返回模拟成功。
+Service operations run through `iosctl`. Visual automation uses the separate
+[iOSRemoteBridge](https://github.com/Justintunsday/iOSRemoteBridge) device plugin
+and its paired TLS client. Both projects can be used together: this repository
+provides system-service adapters, portable skills and the MCP launcher;
+iOSRemoteBridge provides screen streaming and UI input.
 
-## 使用
+Runtime availability is reported by `iosctl capabilities`. An implemented
+adapter can still be unavailable when its helper, entitlement or supported OS
+build is missing.
 
-Python 3.9+，Python 核心无第三方运行依赖。直接从仓库运行：
+## Get started
+
+### Requirements
+
+- Python 3.9 or later.
+- A jailbroken iPhone with the permissions required by the selected service.
+  The verified environment is iOS 16.1.1 / 20B101 with Dopamine rootless.
+- Existing `clang`, `swiftc`, `ldid` and an iPhoneOS SDK to build native helpers.
+  Apple SDKs are supplied separately.
+- ElleKit for settings that use the optional SpringBoard bridge.
+
+Run device commands in the iPhone's terminal or through an existing SSH
+connection. A Windows or other desktop checkout can inspect the catalog and run
+portable tests; iOS service queries on a non-iOS host report `unavailable` with
+reason `not_ios`.
+
+On Windows, use `py -3` where the examples use `python3`.
+
+### Clone and inspect capabilities
 
 ```sh
-python3 bin/iosctl capabilities
-python3 bin/iosctl capabilities --service settings
-python3 bin/iosctl call device.info
-python3 bin/iosctl call activities.get --params '{"activity_id":"实际活动 UUID"}'
-python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
-python3 bin/iosctl call settings.set --params '{"setting":"volume","value":0.4}'
-python3 bin/iosctl call settings.get --params '{"setting":"brightness"}'
-python3 bin/iosctl call settings.get --params '{"setting":"low_power"}'
-python3 bin/iosctl call alarms.list
-python3 bin/iosctl call alarms.create --params '{"hour":23,"minute":57,"title":"Alarm"}'
-python3 bin/iosctl call calendar.list
-python3 bin/iosctl call calendar.create --params '{"title":"My Calendar"}'
-python3 bin/iosctl call settings.set --params '{"setting":"orientation_lock","value":true}'
-python3 bin/iosctl call files.list --params '{"path":"/var/jb/var/root/ios-control-bridge","limit":5}'
-python3 bin/iosctl call browser.search --params '{"query":"iPhone terminal","limit":3}'
-python3 bin/iosctl call weather.current --params '{"latitude":52.52,"longitude":13.41}'
+git clone https://github.com/Justintunsday/ios-control-bridge.git
+cd ios-control-bridge
+
+python3 -B bin/iosctl --version
+python3 -B bin/iosctl capabilities
+python3 -B bin/iosctl capabilities --service settings
 ```
 
-Windows 上可用 `py -3 bin/iosctl capabilities` 检查目录和接口；设备查询需要在真实 iOS 设备执行。在非 iOS 主机上返回 `unavailable/not_ios`。
+The CLI runs directly from the checkout. For an installed `iosctl` command,
+use `python3 -m pip install --no-deps -e .` in a suitable Python environment.
 
-也可安装命令入口：`python3 -m pip install --no-deps -e .`，之后调用 `iosctl`。任何能执行本机命令并解析 JSON 的客户端都可使用该接口；提供给 AI 的可移植技能位于 `skills/ios-control-bridge`。
+### Build native helpers
 
-原生 helper 需要现有 clang、Swift、ldid 和 iPhoneOS SDK，在手机仓库根目录构建；一次构建会生成实时活动读取器和设置适配器：
+On the device, point the builder at an existing iPhoneOS SDK:
 
 ```sh
-python3 tools/build_native.py --sdk /var/jb/opt/sdks/iPhoneOS16.5.sdk
-python3 bin/iosctl call activities.get \
-  --params '{"activity_id":"实际活动 UUID","timeout_ms":5000}'
-python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
+python3 tools/build_native.py --sdk /path/to/iPhoneOS.sdk
 ```
 
-默认 helper 路径为仓库内 `build/native/icb-activities`、`build/native/icb-settings`、`build/native/icb-open-url`、`build/native/icb-alarms`、`build/native/icb-calendar`、`build/native/icb-reminders`。需要显式指定已有 helper 时，使用 `ICB_ACTIVITIES_HELPER`、`ICB_SETTINGS_HELPER`、`ICB_OPEN_URL_HELPER`、`ICB_ALARMS_HELPER`、`ICB_CALENDAR_HELPER`、`ICB_REMINDERS_HELPER`；SDK 可通过 `ICB_SDK` 配置。日历与提醒 helper 还需安装到 `/var/jb/usr/local/bin/`（`icb-calendar`、`icb-reminders`，TCC/私有框架对路径敏感），见 [完成报告](docs/COMPLETION_REPORT.md) 与 [设备验证记录](docs/verification.md)。低电量模式与方向锁定需要额外安装可选 ElleKit SpringBoard bridge：`sudo python3 tools/build_ellekit_bridge.py --respring`；详见 [ElleKit bridge](docs/ELLEKIT_BRIDGE.md)。仓库不保存设备地址、密码或 SSH 私钥。
+Replace the SDK path with your installed SDK. The builder compiles and signs
+six helpers under `build/native/`, then writes a manifest with source and binary
+hashes:
 
-## 结果和开发
+| Helper | Service |
+| --- | --- |
+| `icb-activities` | Live Activity content and state |
+| `icb-settings` | Media volume and screen brightness |
+| `icb-alarms` | System Clock alarms |
+| `icb-calendar` | Calendars and events |
+| `icb-reminders` | Reminder lists and items |
+| `icb-open-url` | LaunchServices URL opening |
 
-所有 `call` 返回 `ios-control-bridge.result.v1` JSON，包含请求 ID、操作、观测时间、来源和范围完整性：`verified` / `partial` / `unavailable` / `error`，退出码分别为 `0 / 2 / 3 / 4`。完整查询没有目标，与查询失败分别表示。
+Calendar and reminder helpers must also be installed at
+`/var/jb/usr/local/bin/icb-calendar` and `/var/jb/usr/local/bin/icb-reminders`.
+These paths matter to the verified TCC/private-framework access behavior. See
+[deployment records](docs/verification.md) and the
+[native API reference](skills/ios-control-bridge/references/private-apis.md).
 
-`settings.get/set`、系统闹钟、日历、提醒事项、文件、浏览器、天气及有界活动监测均有实现；网络与蓝牙设置仍只读。0.12.0 修复了创建对象身份、活动正文监测、删除读回和分页完整性，并将 SpringBoard 通道升级为本地 Unix socket。Python 与原生 helper 应成对升级，旧文件 mailbox 不再使用。写操作以用户明确指定的目标和值执行，修改后读回系统状态。
+After building, install those two signed helpers on the device:
 
-`calendar.events` 支持 `limit`（1–500，默认 100）和 `offset`；分页或截断返回 `partial`，并提供 `total`、`next_offset` 和完整性信息。源日历在翻页期间变化时，客户端应重新查询。
+```sh
+sudo install -d -m 755 /var/jb/usr/local/bin
+sudo install -m 755 build/native/icb-calendar /var/jb/usr/local/bin/icb-calendar
+sudo install -m 755 build/native/icb-reminders /var/jb/usr/local/bin/icb-reminders
+```
 
-- [服务范围与验收](docs/services.md)
-- [架构与接口契约](docs/architecture.md)
-- [开发路线](docs/roadmap.md)
-- [实时活动与迁移验证](docs/live-activities.md)
-- [设备验证记录](docs/verification.md)
-- [0.5.0 开发完成报告](docs/COMPLETION_REPORT.md)
-- [ElleKit SpringBoard bridge](docs/ELLEKIT_BRIDGE.md)
-- [接手开发说明与语言建议](HANDOFF.md)
-- [0.12.0 审查问题修复与验证](docs/review-fixes-0.12.0.md)
-- [iOSRemoteBridge computer-use 接入与真机结果](docs/iosremote-computer-use.md)
-- [可移植 iOS computer-use skill](skills/ios-computer-use/SKILL.md)
+Low power mode, orientation lock and read-only network/Bluetooth state require
+the additional [ElleKit SpringBoard bridge](docs/ELLEKIT_BRIDGE.md). Its installer
+backs up existing files; `--build-only` builds without installing, and an
+explicit `--respring` reloads SpringBoard. Upgrade the CLI, native helpers and
+shim together: version 0.12.0 uses the Unix socket protocol instead of the older
+file mailbox.
 
-本机测试：`python3 -m unittest discover -s tests -v`。真机结果只证明记录中的设备、系统 build 和操作；不将未来服务或其他 iOS 版本列为已验证。
+### Query services
 
-## 团队与维护
+```sh
+python3 -B bin/iosctl call device.info
+python3 -B bin/iosctl call settings.get --params '{"setting":"brightness"}'
+python3 -B bin/iosctl call alarms.list
+python3 -B bin/iosctl call calendar.list
+python3 -B bin/iosctl call reminders.lists
+python3 -B bin/iosctl call files.list --params '{"path":"/var/mobile","limit":10}'
+python3 -B bin/iosctl call browser.search --params '{"query":"iPhone terminal","limit":3}'
+python3 -B bin/iosctl call weather.current --params '{"latitude":52.52,"longitude":13.41}'
+```
 
-- 项目名称：iOS Control Bridge
-- 仓库：https://github.com/Justintunsday/ios-control-bridge
-- 分支：main
-- 维护：iOS Control Bridge contributors
-- OpenCode skill/插件名：`ios-control-bridge`
-- Skill 说明：`skills/ios-control-bridge/README.md`
-- 已验证设备：iPhone12,8 / iOS 16.1.1 / 20B101 / Dopamine rootless
-- Sileo 私有 API 包：`com.opencode.sbsnapshot` → `iOS Control Bridge - Private API Snapshot` 0.5
-- 私有 API 插件说明：[docs/PRIVATE_API_PLUGIN.md](docs/PRIVATE_API_PLUGIN.md)
+Read a Live Activity using its actual UUID:
+
+```sh
+python3 -B bin/iosctl call activities.get \
+  --params '{"activity_id":"ACTIVITY_UUID","timeout_ms":5000}'
+```
+
+Make a targeted change and inspect the resulting state:
+
+```sh
+python3 -B bin/iosctl call settings.set --params '{"setting":"brightness","value":0.5}'
+python3 -B bin/iosctl call settings.get --params '{"setting":"brightness"}'
+```
+
+Use the returned stable IDs for alarm, calendar and reminder mutations. Parameters
+and service-specific behavior are described in the
+[service reference](skills/ios-control-bridge/references/services.md).
+
+## Result contract
+
+Both `capabilities` and `call` return `ios-control-bridge.result.v1` JSON with an operation,
+request ID, status, observation time and `complete_for_scope`. Results can also
+include data, a reason and the actual data source. A complete empty query is
+distinct from a failed or incomplete query.
+
+| Status | Exit code | Meaning |
+| --- | --- | --- |
+| `verified` | `0` | The adapter verified the result for the requested scope. |
+| `partial` | `2` | Some requested data or verification is incomplete. |
+| `unavailable` | `3` | The environment, permission, helper or operation is unavailable. |
+| `error` | `4` | Invalid input or an adapter error. |
+
+Capability entries distinguish `implemented`, recorded `validation` and current
+`runtime.ready_to_query`. Capability discovery does not perform every service
+query. Mutations use readback where supported; an IPC or launch acknowledgement
+alone does not prove the requested system or UI effect.
+
+Event queries support `limit` and `offset`; truncated results report their
+coverage and the next offset. Clients should retain these limits and refresh the
+query if the source changes while paging.
+
+## AI clients and computer use
+
+The service CLI can be called by any client that executes commands and parses
+JSON. Two portable skills provide task instructions:
+
+| Skill | Purpose |
+| --- | --- |
+| [ios-control-bridge](skills/ios-control-bridge/SKILL.md) | Query and change supported system services through fixed `iosctl` operations. |
+| [ios-computer-use](skills/ios-computer-use/SKILL.md) | Observe and operate the visible iPhone UI through iOSRemoteBridge. |
+
+Use an exact service adapter when one is available. For UI tasks, install and
+pair the iOSRemoteBridge plugin separately, keep its backend checkout available,
+and reference the private pairing JSON by absolute path. The
+[backend guide](skills/ios-computer-use/references/backend.md) includes Codex and
+OpenCode configuration examples.
+
+The Python 3.9-compatible MCP entry point uses the standard library:
+
+```sh
+python3 /path/to/ios-control-bridge/tools/run_iosremote_mcp.py \
+  --bridge-root /path/to/iOSRemoteBridge \
+  --config /private/path/client-config.json \
+  --control --stdlib
+```
+
+Replace all paths with real absolute paths. Omit `--control` for viewing only.
+This entry point provides ten tools and reuses the backend's pinned TLS client.
+The alternative SDK entry point, selected by omitting `--stdlib`, requires the
+backend's optional MCP dependencies and Python 3.10 or later.
+
+Ordinary text should use `insert_text`, which submits literal Unicode without
+IME candidate selection. It supports up to 1024 UTF-16 code units; the older
+`type_text` retains US-layout ASCII key semantics. Direct insertion requires a
+compatible native plugin with the [Unicode input patch](https://github.com/Justintunsday/iOSRemoteBridge/pull/2).
+Check `input_diagnostics.literal_text_ready` and observe the focused field before
+input. Insertion does not press Return or send a message.
+
+Chinese, emoji, combining characters, newlines and boundary-length text passed
+readback in an owned UIKit fixture. The updated plugin was installed and reported
+ready; a full deployed MCP text-input round trip, secure fields and arbitrary
+custom editors remain unverified. See the [direct-input report](docs/iosremote-direct-text.md).
+
+UI actions follow screenshot, action, fresh observation. One paired device
+session is available at a time; locking the phone ends it. Disconnect when done,
+and inspect the UI after an ambiguous outcome before issuing another action.
+Keep pairing secrets and raw personal records local.
+
+## Development and verification
+
+```text
+bin/iosctl                CLI entry point
+src/ios_control_bridge/   Python registry, adapters and result contract
+native/                   Objective-C and Swift helpers; optional SpringBoard shim
+skills/                   Portable service and computer-use instructions
+tools/                    Native builds, verification and MCP launchers
+tests/                    Portable Python regression tests
+schemas/                  Request and result schemas
+docs/ and evidence/       Design notes and sanitized verification records
+```
+
+Run portable tests on the development host:
+
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+On the verified device, `python3 tools/test_native.py` builds and runs isolated
+native fixtures. These use in-memory framework substitutes and do not replace
+loading the real SpringBoard shim or observing actual service writes.
+
+The latest [direct-input evidence](evidence/iosremote-direct-text-2026-11-05.json)
+records 138 passing Python tests and the Unicode fixture results. The
+[0.12.0 review](docs/review-fixes-0.12.0.md) records the separate native fixture and
+system-service checks, including recovery from deployment failures. Validation
+applies to the recorded build, target and observation window.
+
+## Documentation
+
+Supporting documents currently include English and Chinese material.
+
+| Document | Contents |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Service routing, request/result contracts and native adapters. |
+| [Device verification](docs/verification.md) | Dated service read/write results and compatibility observations. |
+| [Review fixes](docs/review-fixes-0.12.0.md) | Version 0.12.0 fixes, regression results and deployment recovery. |
+| [Live Activities](docs/live-activities.md) | Native reader, payload handling and OS-build boundary. |
+| [SpringBoard bridge](docs/ELLEKIT_BRIDGE.md) | Optional settings shim, local IPC, installation and lifecycle constraints. |
+| [Computer-use integration](docs/iosremote-computer-use.md) | iOSRemoteBridge integration and observed mobile OpenCode UI tasks. |
+| [Direct Unicode input](docs/iosremote-direct-text.md) | Literal insertion, native fixture evidence and remaining checks. |
+| [Private API reference](skills/ios-control-bridge/references/private-apis.md) | Framework routes, helper paths and entitlements. |
+| [Roadmap](docs/roadmap.md) | Broader service and automation goals. |
+| [Developer handoff](HANDOFF.md) | Repository layout and implementation guidance. |
+
+Cellular and Focus controls, semantic weekday alarm recurrence, a persistent
+monitoring/notification runner and a voice entry point remain future work. The
+UI backend also lacks an accessibility element tree and device-side rejection
+of stale screenshot coordinates. New services and OS builds need their own
+implementation and verification records.
