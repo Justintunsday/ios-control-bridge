@@ -4,9 +4,11 @@
 
 ## 结论与当前完成度
 
-**可以移植观察、定位、操作、再观察的工作方式。需要新增 iOS 执行后端，单独复制 SKILL.md 不能获得截图或触摸能力。** 推荐保留 iOS Control Bridge 的系统服务接口，用 Objective-C 实现设备 UI 后端，用 Python 承担 CLI、MCP 和测试；现有 Swift 活动桥接继续保留。
+**已通过 iOSRemoteBridge 完成观察、定位、操作、再观察的基础移植。** 复用其设备后端与 MCP，保留 iOS Control Bridge 的系统服务接口和现有 Swift 活动桥接。单独复制 SKILL.md 仍不能获得截图或触摸能力；需要实际后端连接。
 
-本轮已完成源码审查、官方资料核对、接口设计与一份独立技能草案：[research/ios-computer-use/SKILL.md](../research/ios-computer-use/SKILL.md)。草案未安装到客户端发现目录。本仓库当前没有实现下文 `ui.*` / `ios_ui_*` 接口；截图、全局控件树、点击、滑动和输入均尚未由本轮真机验证。
+后续已接入用户已有的 **iOSRemoteBridge** 外部 UI 后端，完成截图 → 点击打开测试 App → 新截图，以及滑动、Home、MCP 图片与 ASCII 可见输入验证。可用技能位于 [skills/ios-computer-use](../skills/ios-computer-use/SKILL.md)，启动器为 `tools/run_iosremote_mcp.py`；见 [接入与真机记录](iosremote-computer-use.md)。原 [研究草案](../research/ios-computer-use/SKILL.md) 保留作设计记录。
+
+本仓库仍没有实现下文 `ui.*` / `ios_ui_*` 契约。当前采用上游实际 MCP 工具名，尚无 AX 树、前台 scene、可靠焦点元数据和服务端 observation_id。以下契约是后续增强设计，不能当成现有工具列表。
 
 设备只读核查确认已有 clang、swiftc 和 ldid；在当前 PATH 未发现 screenshot、idevicescreenshot、zxtouch、tidevice 或 appium 命令。这只是命令入口检查，不证明相关框架或 App 一定不存在。
 
@@ -22,8 +24,9 @@ Windows 专属的工具初始化和 Windows 操作规则不机械搬进 iOS skil
 
 | 路线 | 可复用能力 | 当前设备的条件与限制 | 建议 |
 | --- | --- | --- | --- |
+| iOSRemoteBridge | 已有 JPEG、HID 触摸、ASCII 与 MCP stdio | 用户设备已有安装；本轮基础操作实测通过；AX / Unicode / 旧观察拒绝缺失 | 当前基础 computer-use 主线，复用插件而无需新增注入 |
 | WebDriverAgent / XCTest | 截图、可访问控件、点击、滚动、文本输入、App 操作 | 需要可运行的 XCTest runner 与匹配版本；标准构建/启动有 Xcode 和签名条件 | 作为成熟的可选后端与验收对照，先证明 runner 在目标设备可运行 |
-| 设备本地 Objective-C helper / daemon | 复用现有越狱工具链，后续可独立于 Mac 运行 | 截图、跨 App AX、HID 与文本注入的具体接口/entitlement 尚待逐项验证 | 适合本项目 Windows + 越狱手机的主线；先做小范围原型 |
+| 设备本地 Objective-C helper / daemon | 复用现有越狱工具链，后续可独立于 Mac 运行 | 跨 App AX 等额外接口/entitlement 尚待逐项验证 | 用于后续补充能力，不重复实现现有插件已验证的截图与触摸 |
 | ZXTouch / XXTouchNG 等旧项目 | 可研究触摸、OCR 与设备工具的实现思路 | ZXTouch README 声明 iOS 11–14；XXTouchNG 仓库已归档。不能据此确认 iOS 16 rootless 可用 | 仅作源码参考，不直接安装旧包；复用代码前核对对应许可证 |
 
 WDA 通过 XCTest 执行设备自动化；固定版本源码中存在真实的 screenshot、element click/value 等接口，可作为接口实现对照。[WDA v8.9.1 说明](https://github.com/appium/WebDriverAgent/blob/v8.9.1/README.md)、[截图命令](https://github.com/appium/WebDriverAgent/blob/v8.9.1/WebDriverAgentLib/Commands/FBScreenshotCommands.m)、[控件命令](https://github.com/appium/WebDriverAgent/blob/v8.9.1/WebDriverAgentLib/Commands/FBElementCommands.m)。
@@ -34,7 +37,7 @@ WDA 通过 XCTest 执行设备自动化；固定版本源码中存在真实的 s
 
 旧越狱项目的适用范围与许可直接见其上游：[ZXTouch](https://github.com/xuan32546/IOS13-SimulateTouch)、[XXTouchNG](https://github.com/XXTouchNG/XXTouchNG)。本研究没有复制这些项目或随附 Windows runtime 的实现代码。
 
-## 推荐结构
+## 后续增强结构（当前连接路线见接入记录）
 
 ```text
 Codex                         OpenCode
@@ -55,7 +58,7 @@ Codex                         OpenCode
 
 设备端应提供全局串行化和租约，而不只依赖每个 MCP 进程自己的锁：Codex 与 OpenCode 会启动独立进程。会话标识不是身份验证，租约也不是对用户意图的替代。沿用用户实际授予的目标与动作范围。
 
-首先修复 [审查报告](reviews/deepseek-2026-11-05.md) 中的共享文件、链接跟随、遗留命令和并发问题，再扩展 UI 输入。当前 SpringBoard 文件 mailbox 不适合直接升级成点击/输入通道。
+[审查报告](reviews/deepseek-2026-11-05.md) 中的共享文件、链接跟随、遗留命令和并发问题已在 0.12.0 修复。当前 UI 路线复用 iOSRemoteBridge 独立认证通道，不复用旧 SpringBoard 文件 mailbox。
 
 ## 设计接口（当前尚未实现）
 
@@ -101,7 +104,7 @@ Codex                         OpenCode
 | Codex | `config.toml` 中 `[mcp_servers.ios]`，`command` 和 `args` 启动 stdio server | 共用 |
 | OpenCode | `opencode.json` 中 `mcp.ios`，`type: "local"`、`command: [...]` | 共用 |
 
-配置时使用已安装并验证过的实际 MCP 入口；当前仓库尚无这一入口，因此本轮没有写入客户端配置。后续优先 stdio / SSH，沿用已有凭据管理和主机校验，不把 SSH 密码放进 SKILL.md 或公共配置。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)、[OpenCode MCP](https://opencode.ai/docs/mcp-servers/)。
+当前实际 MCP 入口与两个客户端的配置见 [后端说明](../skills/ios-computer-use/references/backend.md)。现有配对 token 仅由本地客户端读取，stdio 不新增 HTTP 监听；不把密码放进 SKILL.md 或公共配置。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)、[OpenCode MCP](https://opencode.ai/docs/mcp-servers/)。
 
 ## 实施与验收次序
 

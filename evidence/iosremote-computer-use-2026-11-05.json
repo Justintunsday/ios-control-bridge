@@ -1,0 +1,66 @@
+{
+  "schema": "ios-control-bridge.iosremote-validation.v1",
+  "date": "2026-11-05",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "build": "20B101",
+    "package": "io.github.justintunsday.iosremotebridge",
+    "package_version": "0.1.0~dev",
+    "server_source_commit": null,
+    "binary_sha256": {
+      "iosremotebridged": "9c835564a642d3898a176af7b3ee4dcf7fd6fa900393074804b37e2f93bad242",
+      "IRBSpringBoard.dylib": "64bef261f25e7278e78aa8d20a7d945332cbb742401a95d307c6182c22c121b7"
+    }
+  },
+  "client": {
+    "repository": "https://github.com/Justintunsday/iOSRemoteBridge",
+    "commit": "24e7a212eb3f4cd8602e884bdba02a54fa16a092",
+    "mcp_sdk": "2.3.0",
+    "tool_count": 13
+  },
+  "host_setup": {
+    "shared_skill_installed": true,
+    "codex_config_readback": true,
+    "opencode_version": "2.0.26",
+    "opencode_config_reloaded": true,
+    "opencode_mcp_catalog_status": "connected"
+  },
+  "verification": {
+    "real_jpeg_viewed_by_model": true,
+    "dimensions": [750, 1334],
+    "tap_open_test_app_observed": true,
+    "swipe_scroll_observed": true,
+    "home_observed": true,
+    "mcp_image_content_received": true,
+    "mcp_input_effects_observed": true,
+    "ascii_visible_readback": true,
+    "ime_commit_verified": false,
+    "test_text_cleared": true,
+    "launch_app": "returned_error_but_app_open_observed",
+    "session_disconnected": true,
+    "springboard_pid_unchanged": true,
+    "safe_mode_marker_present": false,
+    "plugin_installed_or_resprung_this_run": false,
+    "core_python_tests_passed": 125,
+    "upstream_automation_tests_passed": 16,
+    "launcher_cross_cwd_stdio_passed": true,
+    "launcher_readonly_input_gate_passed": true,
+    "launcher_invalid_coordinate_gate_passed": true,
+    "launcher_real_device_image_passed": true,
+    "skill_frontmatter_valid": true,
+    "codex_native_host_model_image_acceptance": "pending_after_host_reload",
+    "opencode_native_host_model_image_acceptance": "pending_after_host_reload"
+  },
+  "not_available_or_not_validated": [
+    "accessibility_tree",
+    "foreground_scene_metadata",
+    "reliable_focus_and_secure_field_metadata",
+    "server_observation_ids_and_stale_coordinate_rejection",
+    "arbitrary_unicode",
+    "rotation_and_multi_touch",
+    "long_duration_stability",
+    "iosctl_ui_operations"
+  ],
+  "private_artifacts": "Screenshots, pairing files, transport metadata and raw logs are excluded from Git."
+}

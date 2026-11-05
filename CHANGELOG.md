@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — iOSRemoteBridge computer-use integration
+
+- Add a portable `ios-computer-use` skill using the existing iOSRemoteBridge MCP tools, plus a working-directory-independent stdio launcher. Keep the system-service CLI dependency-free.
+- Verify JPEG observation, tap, swipe, Home and visible ASCII entry on the existing iOS 16.1.1 installation. Record the launch error with an observed UI effect; do not retry automatically.
+- Keep AX, Unicode input, observation IDs and two-host model image delivery explicitly unverified or unavailable. No device plugin installation or respring is needed for this integration.
+
 ## 0.12.0 — Fix review findings and replace the SpringBoard mailbox
 
 - Replace shared command/result files with a peer-authenticated local Unix socket, restrictive permissions, bounded framing, generation IDs, expiry checks and duplicate rejection. Remove the native Bluetooth write action.

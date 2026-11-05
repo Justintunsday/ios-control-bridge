@@ -1,0 +1,4 @@
+interface:
+  display_name: "iOS Computer Use"
+  short_description: "通过 iOSRemoteBridge 的实际截图、点击和滑动操作已连接的 iPhone"
+  default_prompt: "使用 $ios-computer-use 查看已连接 iPhone 的当前界面，并按我的请求操作。"

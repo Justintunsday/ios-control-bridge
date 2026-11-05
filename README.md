@@ -17,6 +17,7 @@
 | 浏览器 / 网络查询 | 搜索结果、网页内容提取、打开指定页面 | 搜索、正文提取与 LaunchServices 打开已实现并真机验证 |
 | 天气 | 指定位置的实况、预报、来源及数据时间 | Open-Meteo 实况与预报已实现并真机验证 |
 | 文件 | 明确目录内的列举、检索和有界读取 | 统一接口已实现并真机验证 |
+| 可视界面操作 | 截图、点击、滑动、输入、返回桌面 | 可选 iOSRemoteBridge MCP 后端已接入并完成基础真机闭环；不属于 `iosctl` 操作，AX / 中文输入仍未实现 |
 
 能力清单中 `implemented` 表示已有适配代码，`validation` 表示验证状态，`runtime.ready_to_query` 表示当前执行环境具备查询条件。声明中的未来能力不会返回模拟成功。
 
@@ -75,6 +76,8 @@ python3 bin/iosctl call settings.get --params '{"setting":"volume"}'
 - [ElleKit SpringBoard bridge](docs/ELLEKIT_BRIDGE.md)
 - [接手开发说明与语言建议](HANDOFF.md)
 - [0.12.0 审查问题修复与验证](docs/review-fixes-0.12.0.md)
+- [iOSRemoteBridge computer-use 接入与真机结果](docs/iosremote-computer-use.md)
+- [可移植 iOS computer-use skill](skills/ios-computer-use/SKILL.md)
 
 本机测试：`python3 -m unittest discover -s tests -v`。真机结果只证明记录中的设备、系统 build 和操作；不将未来服务或其他 iOS 版本列为已验证。
 

@@ -47,7 +47,7 @@
 
 ## 下一块工作
 
-系统服务适配器与审查修复已有实现。下一步在测试 App 可进前台时补活动正文变化的真机闭环，再按 [iOS computer-use 研究](docs/ios-computer-use.md) 研究只读截图与单次点击原型。UI 后端及 MCP 工具尚未实现；不要把研究草案当已安装能力。
+系统服务适配器与审查修复已有实现。可视界面已接入用户已有的 iOSRemoteBridge MCP：真机截图、单击打开测试 App、滑动、Home 和 ASCII 可见输入已验证，见 [接入记录](docs/iosremote-computer-use.md)。它是可选外部后端，不是 `iosctl ui.*`；不具备 AX、前台 scene / 焦点字段或服务端旧观察拒绝机制。`launch_app` 出现返回错误但实际打开 App，须先截图再判断。活动正文变化的真机闭环仍待单独补验，不能由打开测试 App 推断完成。
 
 新增设置适配器优先放在 `native/settings`，通过固定参数或 JSON 与 CLI 连接。遵守 [AGENTS.md](AGENTS.md)；检查实际方法签名、线程要求、权限与系统版本，不按 root 身份推断接口可用。当前目标是系统真实功能，不能用普通通知代替系统时钟里的闹钟，也不改未知私人数据库。
 

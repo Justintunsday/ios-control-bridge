@@ -5,7 +5,7 @@ description: 通过已经接入并完成能力探测的 iOS UI 工具观察、�
 
 # iOS Computer Use
 
-本文件是后端接入前的研究草案。技能本身不提供截图或触摸能力；工具必须由实际连接的 iOS backend 提供。只使用当前工具列表和能力探测真实返回的接口，不把本文出现的名字当成已经安装的工具。
+本文件保留后端接入前的设计草案。当前可执行的 iOSRemoteBridge 技能位于 [skills/ios-computer-use/SKILL.md](../../skills/ios-computer-use/SKILL.md)，应使用该版本。下文 `ios_ui_*` 名称仍是未来契约；不要把它们当成已经安装的工具。
 
 ## 选择执行途径
 
