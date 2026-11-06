@@ -232,6 +232,27 @@ class AppsTests(unittest.TestCase):
         self.assertEqual(value["reason"], "store_download_pending")
         spawn.assert_not_called()
 
+    def test_native_refusal_is_preserved_when_output_precedes_process_exit(self):
+        payload = {"schema": apps.SCHEMA, "source": apps.SOURCE, "command": "store_download", "status": "unavailable",
+                   "bundle_id": BUNDLE, "app_id": "123", "observed_at_unix": time.time(), "reason": "free_offer_required"}
+        process = Mock(pid=222)
+        process.poll.return_value = None
+        process.wait.return_value = 3
+        def spawn(*args, **kwargs):
+            kwargs["stdout"].write((json.dumps(payload)+"\n").encode())
+            kwargs["stdout"].flush()
+            return process
+        with tempfile.TemporaryDirectory() as temporary:
+            lease = os.open(str(Path(temporary)/"lease"), os.O_CREAT | os.O_RDWR, 0o600)
+            with patch.object(apps, "_store_lease", return_value=lease), \
+                 patch.object(apps, "_store_directory", return_value=Path(temporary)), \
+                 patch.object(apps.os, "O_NOFOLLOW", 0, create=True), \
+                 patch.object(apps.subprocess, "Popen", side_effect=spawn):
+                value = apps._native("store_download", {"app_id": "123", "bundle_id": BUNDLE})
+        self.assertEqual(value["status"], "unavailable")
+        self.assertEqual(value["reason"], "free_offer_required")
+        process.wait.assert_called_once_with(timeout=2)
+
     def test_failed_store_request_is_not_reported_as_pending(self):
         info = {"status": "verified", "app": {"bundle_id": BUNDLE, "free_offer": True}}
         after = {**state(), "store_request": {"status": "unavailable", "reason": "store_request_failed"}}

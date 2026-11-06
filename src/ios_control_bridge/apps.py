@@ -264,7 +264,20 @@ def _background_store(params, timeout):
             if len(raw) > 1024 * 1024:
                 return {"status": "partial", "reason": "native_output_limit_outcome_unknown", "outcome_unknown": True}
             if b"\n" in raw or process.poll() is not None:
-                completed = subprocess.CompletedProcess([], process.poll(), raw.split(b"\n", 1)[0].decode("utf-8"), "")
+                first = raw.split(b"\n", 1)[0].decode("utf-8")
+                code = process.poll()
+                try:
+                    reply = json.loads(first)
+                except ValueError:
+                    reply = None
+                if code is None and (not isinstance(reply, dict) or reply.get("submitted") is not True):
+                    # A refusal is flushed just before the helper exits. Reap it
+                    # before enforcing the final exit/status contract.
+                    try:
+                        code = process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        return {"status": "partial", "reason": "store_worker_startup_outcome_unknown", "outcome_unknown": True}
+                completed = subprocess.CompletedProcess([], code, first, "")
                 completed.worker_pid = process.pid
                 return completed
             if time.monotonic() >= deadline:
