@@ -114,3 +114,6 @@ or physical-device acceptance.
 
 The [November 6 verification record](integration-verification-2026-11-06.md)
 separates passed Python integration tests from the unavailable live UI check.
+The later [installed device acceptance](device-integration-2026-11-06.md)
+records the corrected native package build, actual screen/input checks and
+OpenCode model-to-MCP round trip.

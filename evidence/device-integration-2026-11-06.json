@@ -1,0 +1,182 @@
+{
+  "schema": "ios-bridges.installed-device-verification.v1",
+  "date": "2026-11-06",
+  "observed_at": "2026-11-06T10:54:56.836609+00:00",
+  "device": {
+    "model": "iPhone12,8",
+    "ios": "16.1.1",
+    "os_build": "20B101",
+    "python": "3.9.9",
+    "service_test_uid": 501,
+    "runtime_package": "node26 26.13.0-2"
+  },
+  "packages": [
+    {
+      "package": "ios-control-bridge",
+      "file": "ios-control-bridge_0.12.0+repo.3_iphoneos-arm64.deb",
+      "version": "0.12.0+repo.3",
+      "sha256": "cd6085fa8f0fb09b88cd6bf4c9f6f9795f5c959a84af0a8c34a7d6f34c563817",
+      "source_commit": "6b517499d3f36e2f79697ea3a83e2289ae303f64",
+      "payload_files": 71,
+      "native_compiled": true
+    },
+    {
+      "package": "io.github.justintunsday.iosremotebridge",
+      "file": "io.github.justintunsday.iosremotebridge_0.1.0~dev+repo.20261106.2_iphoneos-arm64.deb",
+      "version": "0.1.0~dev+repo.20261106.2",
+      "sha256": "64a1713fa6fd8ddf527c927c4aefe92d01c5a954ca23d6452175db4d72eb8eac",
+      "ci_artifact_sha256": "240086f85c28a6fbab6236f36409c42a02244d323045e7c67f180b50a3397c41",
+      "source_commit": "c9f04078f94ce99413233341f19d70f69c784bf7",
+      "native_compiled": true
+    },
+    {
+      "package": "opencode",
+      "file": "opencode_2.2.5-5+integration.1_iphoneos-arm64.deb",
+      "version": "2.2.5-5+integration.1",
+      "sha256": "c9ebf746bc437c66bee6faf67df2ed2be04f36509e0e5cd1673530f0944b7583",
+      "ci_artifact_sha256": "f7d7db5c6b931934ea76bef61e54dbd038901e0d765e8682bcf2550269e1e487",
+      "source_commit": "34244513972805a9375ed95246f7e31a262775a8",
+      "native_compiled": false
+    }
+  ],
+  "builds": {
+    "remote_native_ci": {
+      "run": 42201358758,
+      "status": "success"
+    },
+    "opencode_package_ci": {
+      "run": 42201572461,
+      "status": "success"
+    },
+    "control_native_on_device": true,
+    "native_fixture_checks_passed": 19,
+    "device_source_python_tests": {
+      "run": 170,
+      "skipped": 1,
+      "ok": true
+    }
+  },
+  "configuration": {
+    "root_doctor": {
+      "mcp_stdio": {
+        "ready": true,
+        "tool_count": 14,
+        "missing_tools": []
+      },
+      "device_connection_tested": false,
+      "opencode_config": {
+        "ready": true
+      },
+      "system_services": {
+        "status": "verified",
+        "ready_operations": 32,
+        "unavailable_reasons": []
+      },
+      "ready": true
+    },
+    "mobile_doctor": {
+      "mcp_stdio": {
+        "ready": true,
+        "tool_count": 14,
+        "missing_tools": []
+      },
+      "device_connection_tested": false,
+      "opencode_config": {
+        "ready": true
+      },
+      "system_services": {
+        "status": "verified",
+        "ready_operations": 32,
+        "unavailable_reasons": []
+      },
+      "ready": true
+    },
+    "non_mcp_provider_configuration_preserved": true
+  },
+  "service_write": {
+    "uid": 501,
+    "write_status": "verified",
+    "readback_status": "verified",
+    "target_matched": true,
+    "restore_status": "verified",
+    "original_value_restored": true,
+    "source": "BrightnessSystemClient"
+  },
+  "visual": {
+    "actual_jpeg_inspected": true,
+    "width": 750,
+    "height": 1334,
+    "literal_text_ready": true,
+    "literal_text_cases_observed": [
+      "Chinese and emoji in owned chat-app search",
+      "English, Chinese and emoji in Settings search"
+    ],
+    "actions_observed": [
+      "tap",
+      "swipe",
+      "press_home",
+      "insert_text",
+      "double_tap text selection",
+      "long_press icon menu"
+    ],
+    "launch_app": {
+      "result": "backend_refused",
+      "accepted": false,
+      "replayed": false
+    },
+    "screen_filters_and_menus_cleared": true,
+    "direct_sessions_released": true
+  },
+  "model_round_trip": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "screen_description_matched_observation": true,
+    "tool_receipts": [
+      {
+        "name": "iosremote_disconnect",
+        "status": "completed",
+        "content_types": [
+          "text"
+        ],
+        "disconnected": true
+      },
+      {
+        "name": "iosremote_get_device_info",
+        "status": "completed",
+        "content_types": [
+          "text"
+        ]
+      },
+      {
+        "name": "iosremote_get_screen_frame",
+        "status": "completed",
+        "content_types": [
+          "file"
+        ]
+      },
+      {
+        "name": "shell",
+        "status": "completed",
+        "content_types": [
+          "text"
+        ]
+      }
+    ],
+    "owned_test_session_removed": true
+  },
+  "payload_verification": {
+    "payload_files_verified": 125,
+    "payload_symlinks_verified": 3,
+    "payload_errors": [],
+    "protected_credentials_unchanged": true,
+    "safe_mode": false,
+    "new_springboard_crashes": 0,
+    "springboard_running": true
+  },
+  "limits": [
+    "Root-home MCP listing was empty; the verified project listing was connected.",
+    "Legacy ASCII, secure/custom fields, rotation, multi-touch and unattended operation were not newly accepted.",
+    "No passcode bypass or auto-lock change.",
+    "No stable release or apt repository publication in this task."
+  ]
+}
