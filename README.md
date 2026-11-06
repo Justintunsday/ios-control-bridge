@@ -173,6 +173,11 @@ query if the source changes while paging.
 
 ## AI clients and computer use
 
+For OpenCode iOS, use the optional `iosctl opencode setup` and `doctor` commands
+to merge MCP configuration, supply exact service paths and verify the shared
+14-tool backend. See the [three-project integration guide](docs/opencode-integration.md).
+New OpenCode iOS packages expose the same workflow as `opencode-ios-bridge`.
+
 The service CLI can be called by any client that executes commands and parses
 JSON. Two portable skills provide task instructions:
 
@@ -197,7 +202,9 @@ python3 /path/to/ios-control-bridge/tools/run_iosremote_mcp.py \
 ```
 
 Replace all paths with real absolute paths. Omit `--control` for viewing only.
-This entry point provides ten tools and reuses the backend's pinned TLS client.
+With an updated backend this entry point delegates to its native 14-tool stdlib
+server and reuses the pinned TLS client. The original ten-tool shim remains a
+source-only fallback for older checkouts and emits an upgrade warning.
 The alternative SDK entry point, selected by omitting `--stdlib`, requires the
 backend's optional MCP dependencies and Python 3.10 or later.
 

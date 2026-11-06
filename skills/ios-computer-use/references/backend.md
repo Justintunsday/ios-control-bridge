@@ -52,8 +52,10 @@ OpenCode 2.0.26 实测能读取上述兼容配置，并把它规范化为 `mcp.s
 
 ## 手机上的 Python 3.9
 
-当前越狱设备的 Python 为 3.9.9，上游 MCP 2.3.0 要求 Python 3.10+。手机可在同一个启动命令中增加 `--stdlib`，使用本仓库 `tools/iosremote_stdio.py` 的无依赖 MCP stdio 传输。它继续调用经过审查的上游 `automation/client.py` / `protocol.py`，保留原有证书固定和配对，不另开 HTTP 端口，不重装设备插件。
+当前越狱设备的 Python 为 3.9.9，上游 MCP 2.3.0 要求 Python 3.10+。手机可在同一个启动命令中增加 `--stdlib`；更新后的启动器会转交上游 `automation/mcp_stdio.py`，由上游共享工具清单和参数校验。正式设备包入口是 `python3 -B ICB_ROOT/bin/iosctl iosremote --bridge-root IRB_ROOT --config PRIVATE_CLIENT_CONFIG --stdlib`，原 `tools/run_iosremote_mcp.py` 保留兼容。它继续使用上游证书固定和配对，不另开 HTTP 端口，不重装设备插件。旧后端仅在源码目录保留十工具兼容回退，并向 stderr 提示升级。
 
-这个入口提供 10 个工具：设备信息、截图、方向、连接状态、单击、滑动、Unicode 直接插入、旧 ASCII 按键输入、Home 和断开。`insert_text` 需要同时更新原生插件，旧版插件不支持；以 `input_diagnostics.literal_text_ready` 判断已安装后端是否就绪。只读会话先拒绝输入，数值/坐标/时长及文本边界由主机与设备分别校验；错误不自动重发。
+新的原生 stdlib 入口与 SDK 入口提供相同的 14 个工具：原有十项加性能信息、双击、长按和实验性 App 启动。工具已暴露不等于动作已通过真机验证。`insert_text` 需要同时更新原生插件，旧版插件不支持；以 `input_diagnostics.literal_text_ready` 判断已安装后端是否就绪。只读会话先拒绝输入，数值/坐标/时长及文本边界由主机与设备分别校验；错误不自动重发。
+
+OpenCode 可用 `iosctl opencode setup` 生成配置预览、加 `--apply` 备份并合并，再用 `iosctl opencode doctor` 验证惰性握手和清单。OpenCode iOS 的 `opencode-ios-bridge` 提供同一入口；具体路径、root/mobile 身份和验证范围见仓库 [集成说明](../../../docs/opencode-integration.md)。doctor 不连接手机，不证明截图已送达模型。
 
 手机上的 OpenCode 2.2.5 使用其实际 `debug paths` / `debug config` 找到的用户目录配置；不要套用电脑上的 Windows 路径。当前设备通过自己的 Wi-Fi 地址连接既有插件，回环地址未监听；地址与配对文件留在私有本地配置中。使用 `opencode reload` 后检查手机自己的 `opencode mcp list`，不能用电脑端的 connected 代替手机端验收。

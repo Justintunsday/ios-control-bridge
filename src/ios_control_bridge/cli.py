@@ -28,12 +28,23 @@ def parse(argv):
     call.add_argument("operation")
     call.add_argument("--params", default="{}")
     call.add_argument("--request-id", help="Optional caller-provided UUID")
+    for name in ("opencode", "iosremote"):
+        optional = commands.add_parser(name, add_help=False,
+                                       help="Optional " + name + " integration (see " + name + " --help)")
+        optional.add_argument("arguments", nargs=argparse.REMAINDER)
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    values = list(sys.argv[1:] if argv is None else argv)
+    if values and values[0] in ("opencode", "iosremote"):
+        if values[0] == "opencode":
+            from .opencode import main as optional_main
+        else:
+            from .iosremote import main as optional_main
+        return optional_main(values[1:])
     operation = "cli"
     request_id = None
     try:

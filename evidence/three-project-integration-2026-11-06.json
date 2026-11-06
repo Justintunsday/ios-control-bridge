@@ -1,0 +1,101 @@
+{
+  "schema": "ios-bridges.integration-verification.v1",
+  "date": "2026-11-06",
+  "observed_at": "2026-11-06T07:11:10.750948+00:00",
+  "host": {
+    "os": "Windows",
+    "python": "3.14.4",
+    "mcp_sdk": "2.3.0",
+    "passed": 272,
+    "projects": {
+      "iOSRemoteBridge": 33,
+      "ios-control-bridge": 170,
+      "opencode-ios": 69
+    }
+  },
+  "device": {
+    "os": "iOS 16.1.1",
+    "os_build": "20B101",
+    "python": "3.9.9",
+    "uid": 501,
+    "tests_run": 29,
+    "passed": 28,
+    "skipped": 1,
+    "skip_reason": "optional MCP SDK requires a newer Python",
+    "checks": [
+      "stdlib MCP validation and native image content fixtures",
+      "configuration preview, merge, backup and idempotence",
+      "actual cross-repository subprocess handshake and fourteen-tool discovery",
+      "OpenCode shell launcher with a packaged tree lacking tools/"
+    ],
+    "archive_sha256": "a965280e9cf7c454e35f56aab8c120bfdd7f3a9a382c7c91fb6bc2cbaa031b75",
+    "active_opencode_configuration_changed": false,
+    "input_actions": 0
+  },
+  "live_ui": {
+    "status": "unavailable",
+    "reason": "connection_refused",
+    "socket_error": 10061,
+    "control_requested": false,
+    "image_verified": false,
+    "input_actions": 0,
+    "session_released": true
+  },
+  "static_checks": {
+    "workflow_yaml_parsed": 3,
+    "skill_validation": "passed",
+    "shell_syntax": "passed",
+    "whitespace": "passed (existing CRLF recognized for opencode-ios)"
+  },
+  "native_packages": {
+    "new_deb_built": false,
+    "new_deb_installed": false,
+    "native_code_changed": false
+  },
+  "source_snapshots": {
+    "ios-control-bridge": {
+      "base_commit": "4c0e2d14d256a66bdc0a56dc987b2f4a6b8ee22c",
+      "files": {
+        ".github/workflows/test-integration.yml": "70fa557d1f3cd3d813787d7353d195458b59366efcb226903f22a679b20cbb30",
+        "README.md": "7d62fe32bb4d412531af469ad34d7ec15a08d06dd848c43c01435d999d20acc7",
+        "docs/opencode-integration.md": "37cff0a4b593e514acc86e0223122f49c118f02a23fb0b04680272c3ec0de298",
+        "skills/ios-computer-use/SKILL.md": "5bb134bf020ec2c539444057207cb4b9c8129e186c03aae325ee2d40190ee96e",
+        "skills/ios-computer-use/references/backend.md": "e0b84a02c2cd538113da925824d84bbf013ab986b270f6d8fe5bcb2020384e08",
+        "src/ios_control_bridge/cli.py": "21fbfb4a2c6b5ced0af38e525cbe9f30b83837f2e5f92cada09881d17c713f23",
+        "src/ios_control_bridge/iosremote.py": "3715a963da4d734c9177ece7955ac832ff0ac457a4651628ec4fa5e0681c90ee",
+        "src/ios_control_bridge/opencode.py": "ed73aaadd2b34470d0ec5e18a6293e80696015c82f852f6d7c8c0ba7894ecdca",
+        "src/ios_control_bridge/opencode_jsonc.py": "ac4f8b89a194dcd41f3693daa07362821ee248376eac3d528b80bcb11bf0fede",
+        "tests/test_opencode_bridge.py": "4beb6afa8d96aec9799216d1bf202f79139de84b7a0503d9c7c639ef55b0ab8e",
+        "tools/opencode_bridge.py": "ae5a15ccd58c0a09b719eca57c00c61e96a3125d569f6a0ea2378ced38ae7bc4",
+        "tools/run_iosremote_mcp.py": "5fce51acd21185c84bfe2178d754410818bcb7422b57d320f5780b520130deae"
+      }
+    },
+    "iOSRemoteBridge": {
+      "base_commit": "9a98e3ac5b2dd784bcffd643148c9c5002517b73",
+      "files": {
+        ".github/workflows/build-ios.yml": "6aa5de2477c0c5eae93322f66c409d702586c0b7b701a490db7a07afd3d70726",
+        ".github/workflows/tests.yml": "10383febac9bc0e34d8a336c9f169c6b5eb7b3607b0280807bb19dce4e005872",
+        "README.md": "a1402c297a71c074b8c1007b07239e9d660f033ce54df2645009c956564ffd91",
+        "automation/__init__.py": "17b782ba03383120a3660fa06ba4d2fe2098130c20b73f7b1bbaffd2ef89fe0d",
+        "automation/mcp_server.py": "3131c80733ff7acbaf752fd61421c16f2440199f6956e7de7626f3e985f9a76d",
+        "automation/mcp_stdio.py": "500be44642f12a486c1cc4cdef0fcc5d907b1ee421f889a3d272cedb54be96cc",
+        "automation/mcp_tools.py": "89005451946c0a4d80266b7e6a4cff8b916fa7f529ceb590aa035d81b3eb4e60",
+        "automation/tests/test_mcp_stdio.py": "b0b063dff1a28bf370d212214b7a3f2ef0427e9614beedd6bd396b6732225142",
+        "docs/AUTOMATION.md": "d63336a6fc365715a4b7c60ec0f731dd17daa0e9473752f1720b5b895e17dcf9",
+        "ios/Makefile": "358d40999d01dafd7c9a9f0fa4684cd3f16266b96e76e05cb35f1d8049028a5f"
+      }
+    },
+    "opencode-ios": {
+      "base_commit": "a16624ea0909965e5b0b203185e2b14c641d7250",
+      "files": {
+        "README.md": "cf5a7406c4143c887bd86b6cb7cea6f97282c530213503a22de832ed5afc6e70",
+        "docs/IOS_BRIDGES.md": "151d48355bd64feba21e55906459e974a7d796df894d1b67b587c63a35284df1",
+        "packaging/rootless/usr/bin/opencode-ios-bridge": "a9e0d5c717bf4521f8241e1458819c889a26783409dba1f53a60a0849dd8e8f5",
+        "packaging/verify/port_verify.py": "6272f46d4bf47dd551060dd9cd4944e2c446324fea6dd613f12684f5cd9d7ed7",
+        "scripts/package-dependent-node26.py": "8759673338aa3c03e42bc26345974b168017a44573b6f7f2cc9056c1f26f4fcd",
+        "scripts/package-ios.sh": "e9ac9ecfeea1339113797327f1446d55aef5db2465adf8b81998917d44e840f4",
+        "tests/test_ios_bridge.py": "df7e17d7c81c7eb12d54a5a4edc07ab9c6b283ef85aacdb61ca62189ab5869ee"
+      }
+    }
+  }
+}

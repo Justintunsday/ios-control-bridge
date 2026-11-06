@@ -1,0 +1,60 @@
+name: Test Python core and optional iOS integrations
+on:
+  push:
+    paths: ['src/**', 'bin/**', 'tools/**', 'tests/**', '.github/workflows/test-integration.yml']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      iosremote_ref:
+        description: 'iOSRemoteBridge ref containing native stdlib MCP'
+        required: true
+        default: main
+      opencode_ref:
+        description: 'opencode-ios ref containing the bridge launcher'
+        required: true
+        default: main
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v
+  integration:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: control
+      - uses: actions/checkout@v4
+        with:
+          repository: Justintunsday/iOSRemoteBridge
+          ref: ${{ inputs.iosremote_ref }}
+          path: remote
+      - uses: actions/checkout@v4
+        with:
+          repository: Justintunsday/opencode-ios
+          ref: ${{ inputs.opencode_ref }}
+          path: opencode
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Test the actual companion backend
+        working-directory: control
+        env:
+          IOSREMOTE_BRIDGE_TEST_ROOT: ${{ github.workspace }}/remote
+        run: python -S -m unittest discover -s tests -v
+      - name: Test the packaged OpenCode launcher with both bridges
+        working-directory: opencode
+        env:
+          IOS_CONTROL_BRIDGE_TEST_ROOT: ${{ github.workspace }}/control
+          IOSREMOTE_BRIDGE_TEST_ROOT: ${{ github.workspace }}/remote
+        run: python -S -m unittest discover -s tests -v
