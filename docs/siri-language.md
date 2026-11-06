@@ -54,7 +54,10 @@ client-neutral and do not require OpenCode or an AI account.
 The language setting and fresh-process readback passed on the device. Nine new
 boundary tests cover invalid arguments, unsupported builds, bad native responses,
 timeouts, stale values and delayed preference updates; all 160 portable tests pass.
-The stock Siri mixed-speech test is awaiting the owner's post-change result.
+The helper also built through the native build function on the phone and through
+the macOS workflow with warnings treated as errors. After the change, the owner
+confirmed that the fixed Mandarin test sentence and the English names OpenCode,
+Instagram and Wi-Fi were all recognized correctly in stock Siri.
 
 Mandarin as the main language may help with Mandarin sentences containing English
 names. This setting change does not establish arbitrary bilingual speech support.

@@ -17,8 +17,10 @@
     "smart_language_selection_changed": false,
     "microphone_or_screen_control_started_by_maintenance": false
   },
-  "tests": {"new_boundary_tests": 9, "portable_suite_passed": 160},
-  "mixed_speech_after_change": "awaiting_owner_result",
+  "tests": {"new_boundary_tests": 9, "portable_suite_passed": 160, "on_device_native_builder_function": "passed", "macos_native_workflow_run": 42142000027, "macos_native_workflow_result": "success"},
+  "native_source_commit": "b8b174f817f59128512708667dd6da9900ef911e",
+  "mixed_speech_after_change": "owner_confirmed_mandarin_and_english_test_names_correct",
+  "synthetic_test_names": ["OpenCode", "Instagram", "Wi-Fi"],
   "independent_multilingual_asr_implemented": false,
   "privacy": "No raw user utterances, credentials, addresses or audio included."
 }
