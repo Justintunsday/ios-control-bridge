@@ -11,6 +11,11 @@ python3 /var/jb/var/root/ios-control-bridge/bin/iosctl call OPERATION --params '
 
 先看 `capabilities` 的 `implemented`、`validation` 和 `runtime.ready_to_query`。`unavailable` / `not_implemented` 不能报告为成功。所有写操作完成后用对应 `get/list` 读回。
 
+App 管理新增于 0.13.0，helper 为 `build/native/icb-apps`，路由为
+LaunchServices（清单、状态、系统 IPA 安装与删除）和 StoreServices
+（Apple 免费报价与下载请求）。每个 selector 先核对运行时签名，写后用新进程
+读回；可显式使用手机已有 TrollStore。参数和认证等待行为见 [apps.md](apps.md)。
+
 ## 2. 系统闹钟：私有 MobileTimer
 
 - helper：`build/native/icb-alarms`

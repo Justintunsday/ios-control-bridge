@@ -2,7 +2,7 @@
 
 Query and control everyday iOS services from a terminal or an AI client.
 
-[![Version](https://img.shields.io/badge/version-0.12.0-blue)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.13.0-blue)](pyproject.toml)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB)](pyproject.toml)
 [![Device tested](https://img.shields.io/badge/device_tested-iOS_16.1.1-555555)](docs/verification.md)
 
@@ -29,6 +29,7 @@ and OS build. See the [device reports](docs/verification.md) and
 | Calendars | `calendar.*` | List/create/delete calendars and query/create/delete events through EventKit, with explicit IDs, date ranges and pagination. |
 | Reminders | `reminders.*` | List reminder lists; query, create, rename, complete and delete reminders through private ReminderKit APIs. |
 | Files | `files.list`, `files.search`, `files.read` | Bounded results and file reads under an explicitly supplied absolute path. |
+| Apps | `apps.list`, `apps.get`, `apps.store_info`, `apps.install`, `apps.download`, `apps.uninstall` | App Store free offers, local/HTTPS IPA installation and exact bundle-ID removal, with independent readback. See [app management](docs/apps.md). |
 | Web queries | `browser.search`, `browser.read`, `browser.open` | Web search, page text extraction and requests to open HTTP(S) URLs through LaunchServices. |
 | Weather | `weather.current`, `weather.forecast` | Open-Meteo data for supplied coordinates, including provider attribution, units and timestamps. |
 | Visual automation | Optional iOSRemoteBridge MCP tools | Screenshots, taps, swipes, text input and Home. See [computer use](#ai-clients-and-computer-use) for setup and verification boundaries. |
@@ -84,7 +85,7 @@ python3 tools/build_native.py --sdk /path/to/iPhoneOS.sdk
 ```
 
 Replace the SDK path with your installed SDK. The builder compiles and signs
-six helpers under `build/native/`, then writes a manifest with source and binary
+eight helpers under `build/native/`, then writes a manifest with source and binary
 hashes:
 
 | Helper | Service |
@@ -95,6 +96,8 @@ hashes:
 | `icb-calendar` | Calendars and events |
 | `icb-reminders` | Reminder lists and items |
 | `icb-open-url` | LaunchServices URL opening |
+| `icb-siri-language` | Effective Siri recognition language |
+| `icb-apps` | App inventory, App Store and IPA installation, exact-ID removal |
 
 Calendar and reminder helpers must also be installed at
 `/var/jb/usr/local/bin/icb-calendar` and `/var/jb/usr/local/bin/icb-reminders`.

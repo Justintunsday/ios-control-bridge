@@ -1,6 +1,6 @@
 ---
 name: ios-control-bridge
-description: 通过 iOS Control Bridge 或已有终端通道查询和调整已越狱 iPhone 的系统服务、文件与实时活动。用于明确针对已连接设备的设置、闹钟、提醒事项、浏览器和天气能力开发或调用；普通网页天气问答和通用 iOS UI 开发不适用。也包含 iOS Control Bridge 已实现的私有 API 接口与 iosctl 调用说明。
+description: 通过 iOS Control Bridge 或已有终端通道查询和调整已越狱 iPhone 的系统服务、App、文件与实时活动。用于明确针对已连接设备的设置、闹钟、提醒事项、App 安装删除、浏览器和天气能力开发或调用；普通网页天气问答和通用 iOS UI 开发不适用。也包含已实现的私有 API 接口与 iosctl 调用说明。
 ---
 
 # iOS Control Bridge
@@ -9,7 +9,7 @@ description: 通过 iOS Control Bridge 或已有终端通道查询和调整已�
 
 ## 硬性规则：设备写入先走 iosctl
 
-- 所有设备写入（亮度、音量、闹钟、日历、提醒、设置）必须优先调用 `iosctl` 的固定操作；不要用 Python ctypes、`objc_msgSend` 或直接调用私有 C 函数代替适配器。
+- 所有设备写入（亮度、音量、闹钟、日历、提醒、设置、App 安装删除）必须优先调用 `iosctl` 的固定操作；不要用 Python ctypes、`objc_msgSend` 或直接调用私有 C 函数代替适配器。
 - 已验证反例：`BKSDisplayBrightnessSet` 在本环境调用前后亮度不变（no-op），不能用于亮度控制；亮度/音量应使用 `icb-settings`。
 - 写入前用 `iosctl capabilities` 确认 `runtime.ready_to_query`；写入后用对应 `get`/`list` 读回。只有 `verified` 才能报告成功，`partial` / `unavailable` 必须如实说明。
 - 常用命令（在仓库目录执行）：
@@ -38,6 +38,8 @@ python3 -B bin/iosctl call reminders.create --params '{"list_id":"UUID","title":
 查询在用户指定的应用、目录、条目或时间范围内进行。只有请求涉及正文时读取正文；凭据与无关个人记录不进入输出或学习样本。缺失字段保留未知，超时、权限失败、截断与完整空结果分别表达。
 
 用户明确要求的调整沿用已有授权。以准确对象和目标值调用已实现适配器，修改后读回；不能把请求受理当成结果已核实。闹钟时间、重复规则、提醒清单或目标条目存在关键歧义时补齐参数，同时继续不依赖答案的工作。
+
+安装和删除 App 使用 `apps.*`，细节见 [apps.md](references/apps.md)。先解析准确 bundle ID；App Store 和 HTTPS IPA 分别指定来源。Apple ID 认证由用户在手机完成；等待授权或下载的 `partial` 结果只读回，不重发安装。TrollStore 必须已存在且显式选择，系统签名拒绝不自动切换安装渠道。
 
 终端兜底只使用已经确认存在的系统工具和方法。没有对应接口时说明具体缺口，不猜私有 selector、修改未知数据库或自动安装依赖来扩大任务。
 

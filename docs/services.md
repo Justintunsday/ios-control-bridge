@@ -5,6 +5,7 @@
 | 服务 | 操作 | 完成条件 |
 | --- | --- | --- |
 | device | `info` | 当前 OS / build、型号、UID 与 bootstrap 证据来自设备 |
+| apps | `list`, `get`, `store_info`, `install`, `download`, `uninstall` | App Store 免费报价、IPA 本地/HTTPS 安装与按准确 bundle ID 删除；独立进程读回。普通签名走系统安装，可显式选择已有 TrollStore；系统认证在手机完成。见 [App 管理](apps.md) |
 | settings | `get`, `set` | 每个设置项分别声明支持版本、值类型和权限；修改后读回；不支持的项目明确报告。媒体音量（`volume`）、屏幕亮度（`brightness`）、低电量模式（`low_power`，布尔）与方向锁定（`orientation_lock`，布尔）已实现并真机验证；Wi-Fi/飞行模式/蓝牙（`wifi`/`airplane`/`bluetooth`）为只读；后五项通过可选 ElleKit SpringBoard bridge |
 | alarms | `list`, `create`, `update`, `set_enabled`, `delete` | 返回系统时钟真实闹钟的稳定 ID；时间、标签、启停可读回；测试样本已清理。已实现并真机验证，使用私有 `MobileTimer.framework` 与 `com.apple.private.mobiletimerd` entitlement |
 | reminders | `lists`, `list`, `create`, `update`, `complete`, `delete` | 基于明确清单和条目 ID 读取、写入并读回。已实现并真机验证，使用私有 ReminderKit `REMStore` |

@@ -1,7 +1,7 @@
 """Declare project scope separately from implemented and device-verified adapters."""
 from dataclasses import asdict, dataclass
 
-from . import alarms, browser, calendar, files, reminders, siri, weather
+from . import alarms, apps, browser, calendar, files, reminders, siri, weather
 from .activities import (get_activity, helper_path as activities_helper_path,
                          watch_activity)
 from .browser import open_helper_path as browser_open_helper_path
@@ -53,6 +53,12 @@ OPERATIONS = [
     Operation("files.list", "List files under an explicit directory", implemented=True, validation="device_verified"),
     Operation("files.search", "Search within an explicit directory with bounded results", implemented=True, validation="device_verified"),
     Operation("files.read", "Read a selected file with size and encoding limits", implemented=True, validation="device_verified"),
+    Operation("apps.list", "List installed apps with bounded results", implemented=True, validation="device_verified"),
+    Operation("apps.get", "Read installation state by exact bundle ID", implemented=True, validation="device_verified"),
+    Operation("apps.store_info", "Look up one App Store app and its current free offer", implemented=True, validation="device_verified"),
+    Operation("apps.install", "Install a local IPA and verify its bundle ID and version", mutates=True, implemented=True, validation="device_verified"),
+    Operation("apps.download", "Download from App Store or an HTTPS IPA link, then verify installation", mutates=True, implemented=True, validation="device_verified"),
+    Operation("apps.uninstall", "Remove one user app by exact bundle ID and verify absence", mutates=True, implemented=True, validation="device_verified"),
 ]
 BY_NAME = {operation.name: operation for operation in OPERATIONS}
 
@@ -96,6 +102,8 @@ def catalog(service=None):
             ready, reason = _settings_readiness(version)
         elif operation.name.startswith("siri.language."):
             ready, reason = siri.readiness()
+        elif operation.name.startswith("apps."):
+            ready, reason = apps.readiness()
         elif operation.name == "browser.open":
             if not browser_open_helper_path().is_file():
                 ready, reason = False, "native_helper_missing"
@@ -112,6 +120,10 @@ def catalog(service=None):
         if operation.name.startswith("settings."):
             row["supported_settings"] = list(SUPPORTED_SETTINGS)
             row["available_settings"] = available_settings()
+        if operation.name == "apps.download":
+            row["source_validation"] = {"ipa": "device_verified_via_existing_trollstore",
+                                        "app_store": "device_verified_after_system_authentication"}
+            row["verified_builds"] = ["20B101"]
         if operation.validation == "device_verified":
             row["verified_builds"] = ["20B101"]
         rows.append(row)
@@ -133,6 +145,8 @@ def invoke(operation, params, request_id=None):
         if params:
             return result(operation, "error", reason="unknown_parameters", request_id=request_id)
         return device_info(request_id)
+    if operation.startswith("apps."):
+        return apps.call(operation, params, request_id)
     if operation == "settings.get":
         return get_setting(params, request_id)
     if operation == "settings.set":

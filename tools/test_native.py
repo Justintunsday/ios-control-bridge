@@ -22,6 +22,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from ios_control_bridge import ellekit_bridge as bridge
+from ios_control_bridge import apps
 
 
 def run(arguments):
@@ -64,11 +65,12 @@ def main():
         endpoint_dir = Path(socket_directory) / "ipc"
         endpoint_dir.mkdir(mode=0o700)
         binaries = {}
-        for name in ("Alarm", "Reminder", "Calendar", "Socket"):
+        for name in ("Alarm", "Reminder", "Calendar", "Socket", "App", "AppWorker"):
             binary = stage / name
             command = [clang, "-target", "arm64-apple-ios16.1", "-isysroot", args.sdk,
                        "-fno-objc-arc", "-fblocks", "-Wall", "-Wextra",
                        ROOT / ("tests/native/%sRegression.m" % name), "-framework", "Foundation", "-o", binary]
+            if name == "App": command[command.index("-fno-objc-arc")] = "-fobjc-arc"
             if name == "Socket": command.append('-DICB_DIRECTORY="%s"' % endpoint_dir)
             run(command)
             run([ldid, "-S", binary])
@@ -81,6 +83,37 @@ def main():
             for key, value in expected.items(): assert payload.get(key) == value, (component, mode, key, payload)
             checks[component.lower() + "_" + mode] = True
             return payload
+
+        fixture("App", "protected", 4, {"status": "error", "reason": "protected_app"})
+        fixture("App", "signature", 3, {"status": "unavailable", "reason": "uninstall_signature_unavailable"})
+        fixture("App", "refused", 3, {"status": "unavailable", "accepted": False})
+        fixture("App", "accepted", 2, {"status": "partial", "accepted": True})
+        fixture("App", "delegate_failure", 3, {"status": "unavailable", "reason": "store_request_failed",
+                "system_error": {"domain": "fixture.store", "code": 7,
+                                 "underlying": {"domain": "fixture.network", "code": -1}}})
+        fixture("App", "delegate_success", 2, {"status": "partial", "reason": "store_request_finished_readback_required"})
+
+        worker_state = stage / "app-worker-state"
+        worker_state.mkdir(mode=0o700)
+        with patch.object(apps, "helper_path", return_value=binaries["AppWorker"]), \
+                patch.object(apps, "_store_directory", return_value=worker_state):
+            worker = apps._native("store_download", {"app_id": "1", "bundle_id": "dev.ioscontrol.appsfixture"})
+            assert worker["status"] == "partial" and worker.get("worker_pid"), worker
+            os.kill(worker["worker_pid"], 0)
+            checks["app_worker_survives_initial_ack"] = True
+            duplicate = apps._native("store_download", {"app_id": "1", "bundle_id": "dev.ioscontrol.appsfixture"})
+            assert duplicate.get("reason") == "store_download_pending", duplicate
+            checks["app_worker_lease_blocks_duplicate"] = True
+            deadline = time.monotonic() + 5
+            while True:
+                try:
+                    descriptor = apps._store_lease("dev.ioscontrol.appsfixture")
+                    os.close(descriptor)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline: raise
+                    time.sleep(0.05)
+            checks["app_worker_exit_releases_lease"] = True
 
         for component in ("Alarm", "Reminder"):
             fixture(component, "failure", 2, {"status": "partial", "reason": "readback_unavailable"})

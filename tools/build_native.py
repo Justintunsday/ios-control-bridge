@@ -12,7 +12,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.12.0"
+VERSION = "0.13.0"
 
 
 def run(args, seconds=120):
@@ -117,6 +117,17 @@ def build_settings(sdk, tools, build, stage, steps):
     return binary
 
 
+def build_apps(sdk, tools, build, stage, steps):
+    source = ROOT / "native/apps"
+    binary = stage / "icb-apps"
+    steps.append(run([tools["clang"], "-target", "arm64-apple-ios16.1", "-isysroot", sdk,
+                      "-fobjc-arc", "-fblocks", "-O2", "-Wall", "-Wextra", "-Werror",
+                      source / "AppsBridge.m", "-framework", "Foundation", "-o", binary]))
+    steps.append(run([tools["ldid"], "-S" + str(source / "entitlements.plist"), binary], 10))
+    binary.chmod(0o755)
+    return binary
+
+
 def build_siri_language(sdk, tools, build, stage, steps):
     source = ROOT / "native/siri"
     binary = stage / "icb-siri-language"
@@ -157,6 +168,7 @@ def main():
     calendar_binary = build_calendar(sdk, tools, build, stage, steps)
     reminders_binary = build_reminders(sdk, tools, build, stage, steps)
     siri_language_binary = build_siri_language(sdk, tools, build, stage, steps)
+    apps_binary = build_apps(sdk, tools, build, stage, steps)
     source_files = sorted(file for file in (ROOT / "native").rglob("*") if file.is_file())
     manifest = {
         "project": "ios-control-bridge",
@@ -173,6 +185,7 @@ def main():
             "icb-calendar": {"sha256": digest(calendar_binary)},
             "icb-reminders": {"sha256": digest(reminders_binary)},
             "icb-siri-language": {"sha256": digest(siri_language_binary)},
+            "icb-apps": {"sha256": digest(apps_binary)},
         },
         "binary_sha256": digest(activities_binary),
         "source_sha256": {str(file.relative_to(ROOT / "native")): digest(file) for file in source_files},
@@ -186,6 +199,7 @@ def main():
     os.replace(calendar_binary, build / "icb-calendar")
     os.replace(reminders_binary, build / "icb-reminders")
     os.replace(siri_language_binary, build / "icb-siri-language")
+    os.replace(apps_binary, build / "icb-apps")
     (build / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf8")
     print(json.dumps(manifest))
 
