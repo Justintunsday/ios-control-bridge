@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-06",
+  "timezone": "Asia/Hong_Kong",
+  "device": {"ios": "16.1.1", "build": "20B101", "mobile_uid": 501},
+  "issue": "Reported mixed Mandarin/English Siri input problems",
+  "source": "AssistantServices.AFPreferences",
+  "before_effective_language": "en-US",
+  "requested_primary_language": "zh-CN",
+  "after_effective_language": "zh-CN",
+  "fresh_process_readback": "zh-CN",
+  "write_path": "iosctl siri.language.set through a fixed mobile-user native helper",
+  "observations": {
+    "initial_immediate_read_was_stale": true,
+    "later_process_confirmed_language_change": true,
+    "idempotent_set_and_independent_readback_verified": true,
+    "raw_preference_files_written": false,
+    "smart_language_selection_changed": false,
+    "microphone_or_screen_control_started_by_maintenance": false
+  },
+  "tests": {"new_boundary_tests": 9, "portable_suite_passed": 160},
+  "mixed_speech_after_change": "awaiting_owner_result",
+  "independent_multilingual_asr_implemented": false,
+  "privacy": "No raw user utterances, credentials, addresses or audio included."
+}

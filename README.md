@@ -22,6 +22,7 @@ and OS build. See the [device reports](docs/verification.md) and
 | Area | Operations or family | Details |
 | --- | --- | --- |
 | Device information | `device.info` | Model, OS build, execution identity and bootstrap evidence. |
+| Siri language | `siri.language.get`, `siri.language.set` | Effective recognition language and independently verified Mandarin/English primary-language selection. Requires the optional native helper. |
 | Live Activities | `activities.get`, `activities.watch` | Read a selected activity's cross-app content and state; monitor changes with bounded polling. |
 | Settings | `settings.get`, `settings.set` | Read and change media volume, brightness, low power mode and orientation lock, with readback. Wi-Fi, airplane mode and Bluetooth are read-only. |
 | Alarms | `alarms.*` | List, create, update time/label, enable/disable and delete system Clock alarms through private MobileTimer APIs. |
@@ -227,6 +228,10 @@ spoken by the original Siri interface. It adds no visual effects or screen-contr
 session. This optional integration lives outside the client-neutral core and
 requires its own build, installation and enable step.
 
+Speech recognition still uses Siri. The [language diagnostic and controls](docs/siri-language.md)
+explain primary-language selection and the separate validation needed for mixed
+Mandarin/English speech.
+
 ## Development and verification
 
 ```text
@@ -273,6 +278,7 @@ Supporting documents currently include English and Chinese material.
 | [Computer-use integration](docs/iosremote-computer-use.md) | iOSRemoteBridge integration and observed mobile OpenCode UI tasks. |
 | [Direct Unicode input](docs/iosremote-direct-text.md) | Literal insertion, native fixture evidence and remaining checks. |
 | [Native Siri](docs/native-siri.md) | Stock Siri UI/TTS with optional OpenCode answers, installation and device evidence. |
+| [Siri language](docs/siri-language.md) | Effective-language queries, verified preference writes and mixed-speech limits. |
 | [Private API reference](skills/ios-control-bridge/references/private-apis.md) | Framework routes, helper paths and entitlements. |
 | [Roadmap](docs/roadmap.md) | Broader service and automation goals. |
 | [Developer handoff](HANDOFF.md) | Repository layout and implementation guidance. |

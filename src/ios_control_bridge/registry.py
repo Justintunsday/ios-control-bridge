@@ -1,7 +1,7 @@
 """Declare project scope separately from implemented and device-verified adapters."""
 from dataclasses import asdict, dataclass
 
-from . import alarms, browser, calendar, files, reminders, weather
+from . import alarms, browser, calendar, files, reminders, siri, weather
 from .activities import (get_activity, helper_path as activities_helper_path,
                          watch_activity)
 from .browser import open_helper_path as browser_open_helper_path
@@ -26,6 +26,8 @@ OPERATIONS = [
     Operation("activities.watch", "Monitor activity changes until an explicit stop condition", implemented=True, validation="device_verified"),
     Operation("settings.get", "Read a supported setting (volume, brightness, low_power, orientation_lock, wifi, airplane, bluetooth)", implemented=True, validation="device_verified"),
     Operation("settings.set", "Change a writable setting and verify the readback (volume, brightness, low_power, orientation_lock); network/Bluetooth settings are read-only", mutates=True, implemented=True, validation="device_verified"),
+    Operation("siri.language.get", "Read the effective Siri recognition language", implemented=True, validation="device_verified"),
+    Operation("siri.language.set", "Set an explicitly supported Siri language and verify it in a fresh process", mutates=True, implemented=True, validation="device_verified"),
     Operation("alarms.list", "Read system alarms", implemented=True, validation="device_verified"),
     Operation("alarms.create", "Create an alarm with explicit time and title", mutates=True, implemented=True, validation="device_verified"),
     Operation("alarms.update", "Modify one alarm by stable ID", mutates=True, implemented=True, validation="device_verified"),
@@ -92,6 +94,8 @@ def catalog(service=None):
                 ready, reason = False, "native_helper_missing"
         elif operation.name.startswith("settings."):
             ready, reason = _settings_readiness(version)
+        elif operation.name.startswith("siri.language."):
+            ready, reason = siri.readiness()
         elif operation.name == "browser.open":
             if not browser_open_helper_path().is_file():
                 ready, reason = False, "native_helper_missing"
@@ -133,6 +137,8 @@ def invoke(operation, params, request_id=None):
         return get_setting(params, request_id)
     if operation == "settings.set":
         return set_setting(params, request_id)
+    if operation in ("siri.language.get", "siri.language.set"):
+        return siri.language(params, request_id, write=operation.endswith(".set"))
     if operation == "activities.watch":
         return watch_activity(params, request_id)
     if operation == "browser.search":

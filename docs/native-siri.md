@@ -6,6 +6,11 @@ OpenCode conversation. Answers return through Siri's own utterance views and
 TTS text. There is no added lighting effect, overlay, keyboard automation or VNC
 connection.
 
+Speech recognition remains Apple's Siri recognizer. See the
+[language diagnostic](siri-language.md) for Mandarin/English input and the fixed
+language-settings adapter; replacing the answer backend does not itself add a
+multilingual recognizer.
+
 Verified on an iPhone SE (2nd generation), iOS **16.1.1 / 20B101**, with OpenCode
 2.2.5. Other builds are rejected by the native hook and backend. This is an
 experimental private-API integration; see the dated [evidence](../evidence/native-siri-2026-11-05.json).

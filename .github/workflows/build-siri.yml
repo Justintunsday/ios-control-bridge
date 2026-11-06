@@ -28,6 +28,7 @@ jobs:
           xcrun lipo -create build/siri/NativeBridge.arm64.dylib build/siri/NativeBridge.arm64e.dylib -output build/siri/NativeBridge.dylib
           xcrun --sdk iphoneos clang -target arm64-apple-ios16.1 -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror native/siri/TypedFixture.m -framework Foundation -o build/siri/TypedFixture
           xcrun --sdk iphoneos clang -target arm64-apple-ios16.1 -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror native/siri/TextExtractionFixture.m -framework Foundation -o build/siri/TextExtractionFixture
+          xcrun --sdk iphoneos clang -target arm64-apple-ios16.1 -isysroot "$SDK" -fobjc-arc -Wall -Wextra -Werror native/siri/LanguageSettings.m -framework Foundation -o build/siri/LanguageSettings
           xcrun lipo -info build/siri/RequestObserver.dylib
           shasum -a 256 build/siri/RequestObserver.dylib build/siri/TypedFixture
           shasum -a 256 build/siri/NativeBridge.dylib
@@ -39,4 +40,5 @@ jobs:
             build/siri/TypedFixture
             build/siri/NativeBridge.dylib
             build/siri/TextExtractionFixture
+            build/siri/LanguageSettings
           if-no-files-found: error
