@@ -4,7 +4,7 @@
 
 ## 结论与当前完成度
 
-**已通过 iOSRemoteBridge 完成观察、定位、操作、再观察的基础移植。** 复用其设备后端与 MCP，保留 iOS Control Bridge 的系统服务接口和现有 Swift 活动桥接。单独复制 SKILL.md 仍不能获得截图或触摸能力；需要实际后端连接。
+**已通过 iOSRemoteBridge 完成观察、定位、操作、再观察的基础移植。** 复用其设备后端与 MCP，保留 Control API 的系统服务接口和现有 Swift 活动桥接。单独复制 SKILL.md 仍不能获得截图或触摸能力；需要实际后端连接。
 
 后续已接入用户已有的 **iOSRemoteBridge** 外部 UI 后端，完成截图 → 点击打开测试 App → 新截图，以及滑动、Home、MCP 图片与 ASCII 可见输入验证。可用技能位于 [skills/ios-computer-use](../skills/ios-computer-use/SKILL.md)，启动器为 `tools/run_iosremote_mcp.py`；见 [接入与真机记录](iosremote-computer-use.md)。原 [研究草案](../research/ios-computer-use/SKILL.md) 保留作设计记录。
 

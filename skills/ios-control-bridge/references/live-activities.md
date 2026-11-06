@@ -26,7 +26,7 @@ Live Activities 由应用的 ActivityKit 数据和 WidgetKit 展示共同提供�
 
 ## 已验证的独立入口
 
-iOS Control Bridge 提供 `iosctl call activities.get --params '{"activity_id":"实际 UUID"}'`。它在 iOS 16.1.1 / 20B101 使用 SessionKit 监听权限与真实 `BSServiceConnection`，从 `sessionkitd` 读取跨 App 原始正文。只在能力清单显示该适配器和当前设备条件满足时调用；缺少原生 helper、系统未验证和超时分别报告。
+Control API 提供 `iosctl call activities.get --params '{"activity_id":"实际 UUID"}'`。它在 iOS 16.1.1 / 20B101 使用 SessionKit 监听权限与真实 `BSServiceConnection`，从 `sessionkitd` 读取跨 App 原始正文。只在能力清单显示该适配器和当前设备条件满足时调用；缺少原生 helper、系统未验证和超时分别报告。
 
 返回的原生 payload 在统一 JSON 的 `data` 中，包含 `target_found`、`activity`、`content` 与自己的数据时间。完整范围内没有目标时，`target_found:false`、`activity:null`；查询失败不会提供旧正文。实际卡片可见性仍需屏幕来源核实。不要读取测试 App 的公开审计文件来代替私有正文。
 

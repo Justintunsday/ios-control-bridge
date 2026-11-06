@@ -1,11 +1,11 @@
-# iOS Control Bridge Skill
+# Control API Skill
 
-这是 iOS Control Bridge 的 OpenCode skill/插件说明。
+这是 Control API 的 OpenCode skill/插件说明。
 
 ## 名称
 
 - 插件/skill 名：`ios-control-bridge`
-- 显示名：`iOS Control Bridge`
+- 显示名：`Control API`
 - 设备端安装目录：`/var/jb/var/root/.config/opencode/skills/ios-control-bridge`
 - 仓库源目录：`skills/ios-control-bridge`
 
@@ -45,7 +45,7 @@ python3 -B bin/iosctl call reminders.lists
 - GitHub：<https://github.com/Justintunsday/ios-control-bridge>
 - 分支：`main`
 - 根 README：https://github.com/Justintunsday/ios-control-bridge/blob/main/README.md
-- 维护：iOS Control Bridge contributors；本机验证设备：iPhone12,8 / iOS 16.1.1 / 20B101 / Dopamine rootless
+- 维护：Control API contributors；本机验证设备：iPhone12,8 / iOS 16.1.1 / 20B101 / Dopamine rootless
 
 ## 版本与兼容性
 

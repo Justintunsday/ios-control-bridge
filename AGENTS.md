@@ -1,4 +1,4 @@
-# iOS Control Bridge
+# Control API
 
 This repository is an independent, client-neutral bridge for querying and controlling everyday iOS system services. Keep runtime, build and tests independent of any coding agent, AI account or old workspace.
 

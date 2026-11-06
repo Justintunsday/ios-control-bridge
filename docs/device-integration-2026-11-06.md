@@ -7,7 +7,7 @@ SE 2 / iOS 16.1.1 (20B101). Python is 3.9.9; the existing Node runtime remains
 | Package | Installed version | Build source |
 | --- | --- | --- |
 | iOSRemoteBridge | `0.1.0~dev+repo.20261106.2` | `c9f04078f94ce99413233341f19d70f69c784bf7`; [native build](https://github.com/Justintunsday/iOSRemoteBridge/actions/runs/42201358758). |
-| iOS Control Bridge | `0.12.0+repo.3` | `6b517499d3f36e2f79697ea3a83e2289ae303f64`; native helpers, settings shim and Siri transport rebuilt using the existing device toolchain/SDK. |
+| Control API | `0.12.0+repo.3` | `6b517499d3f36e2f79697ea3a83e2289ae303f64`; native helpers, settings shim and Siri transport rebuilt using the existing device toolchain/SDK. |
 | OpenCode iOS | `2.2.5-5+integration.1` | `34244513972805a9375ed95246f7e31a262775a8`; [package build](https://github.com/Justintunsday/opencode-ios/actions/runs/42201572461), retaining the reviewed CLI, renderer and exact Node dependency. |
 
 The source iOSRemoteBridge build initially placed the Python backend under

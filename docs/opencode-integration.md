@@ -5,7 +5,7 @@ The three projects share one optional integration path:
 | Project | Responsibility |
 | --- | --- |
 | [OpenCode iOS](https://github.com/Justintunsday/opencode-ios) | Agent, provider configuration and terminal client; optional `opencode-ios-bridge` launcher. |
-| iOS Control Bridge | Fixed `iosctl` system-service operations, client setup and diagnostics. |
+| Control API | Fixed `iosctl` system-service operations, client setup and diagnostics. |
 | [iOSRemoteBridge](https://github.com/Justintunsday/iOSRemoteBridge) | Paired TLS transport, screen images and input; one catalog for SDK and stdlib MCP adapters. |
 
 System services execute where `iosctl` runs. A desktop can view a paired phone,

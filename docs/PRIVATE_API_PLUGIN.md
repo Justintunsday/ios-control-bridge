@@ -7,13 +7,13 @@
 | 字段 | 值 |
 | --- | --- |
 | Package ID | `com.opencode.sbsnapshot` |
-| Name | `iOS Control Bridge - Private API Snapshot` |
+| Name | `Control API - Private API Snapshot` |
 | Version | `0.5` |
 | Architecture | `iphoneos-arm64` |
 | Section | Development |
 | Depends | `ellekit` |
 | Maintainer | `Justintunsday <Justintunsday@users.noreply.github.com>` |
-| Author | `iOS Control Bridge contributors` |
+| Author | `Control API contributors` |
 | Homepage | https://github.com/Justintunsday/ios-control-bridge |
 | 安装 README | `/var/jb/usr/share/doc/com.opencode.sbsnapshot/README.md` |
 

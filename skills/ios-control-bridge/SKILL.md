@@ -1,9 +1,11 @@
 ---
 name: ios-control-bridge
-description: 通过 iOS Control Bridge 或已有终端通道查询和调整已越狱 iPhone 的系统服务、App、文件与实时活动。用于明确针对已连接设备的设置、闹钟、提醒事项、App 安装删除、浏览器和天气能力开发或调用；普通网页天气问答和通用 iOS UI 开发不适用。也包含已实现的私有 API 接口与 iosctl 调用说明。
+description: 通过 Control API 或已有终端通道查询和调整已越狱 iPhone 的系统服务、App、文件与实时活动。用于明确针对已连接设备的设置、闹钟、提醒事项、App 安装删除、浏览器和天气能力开发或调用；普通网页天气问答和通用 iOS UI 开发不适用。也包含已实现的私有 API 接口与 iosctl 调用说明。
 ---
 
-# iOS Control Bridge
+# Control API
+
+软件包 ID 仍为 `ios-control-bridge`，执行入口为 `iosctl`。
 
 把自然语言请求映射为有依据的设备操作。默认用简体中文，先给结论，再给观测时间、来源、范围和未完成的部分。
 

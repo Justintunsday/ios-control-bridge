@@ -1,6 +1,6 @@
 # 私有 API 接口与固定适配器
 
-本文件记录 iOS Control Bridge 已实现、已在 iPhone SE 2 / iOS 16.1.1 / 20B101 验证的私有 API 接口。目标不是让 AI 直接调用任意私有 selector，而是使用固定适配器和 `iosctl` 操作；任何扩展都必须重新验证、固定参数、写后读回。
+本文件记录 Control API 已实现、已在 iPhone SE 2 / iOS 16.1.1 / 20B101 验证的私有 API 接口。目标不是让 AI 直接调用任意私有 selector，而是使用固定适配器和 `iosctl` 操作；任何扩展都必须重新验证、固定参数、写后读回。
 
 ## 1. 总入口
 

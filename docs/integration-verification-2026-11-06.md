@@ -18,7 +18,7 @@ paired remote UI session.
 | Validation | Result |
 | --- | --- |
 | Windows, iOSRemoteBridge, MCP SDK 2.3.0 | 33 passed, including actual SDK/stdlib catalog and routing parity. |
-| Windows, iOS Control Bridge | 170 passed, including real cross-repository subprocess discovery. |
+| Windows, Control API | 170 passed, including real cross-repository subprocess discovery. |
 | Windows, OpenCode iOS | 69 passed, including the shell launcher and a Python payload without tools/. |
 | iPhone, iOS 16.1.1 / 20B101, Python 3.9.9 | 28 passed, 1 optional SDK test skipped across the three integration suites. |
 | YAML, shell syntax and portable skill validation | Passed. |

@@ -313,8 +313,10 @@ static NSDictionary *store(BOOL download) {
     __attribute__((objc_precise_lifetime)) ICBStoreObserver *observer = [ICBStoreObserver new];
     for (NSString *name in @[@"SSRequestDelegate", @"SSPurchaseRequestDelegate"]) {
         Protocol *protocol = NSProtocolFromString(name);
-        if (!protocol) return response(@"unavailable", @"store_delegate_protocol_unavailable");
-        class_addProtocol(ICBStoreObserver.class, protocol);
+        // StoreServices omits optional purchase-delegate metadata when the
+        // StoreKit UI image is not loaded. Selector callbacks still work; the
+        // 20B101 encodings were checked independently and are implemented above.
+        if (protocol) class_addProtocol(ICBStoreObserver.class, protocol);
     }
     ((void (*)(id, SEL, id))objc_msgSend)(request, NSSelectorFromString(@"setDelegate:"), observer);
     BOOL started = ((BOOL (*)(id, SEL))objc_msgSend)(request, NSSelectorFromString(@"start"));

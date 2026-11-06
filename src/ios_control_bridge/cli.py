@@ -19,7 +19,7 @@ class Parser(argparse.ArgumentParser):
 
 
 def parse(argv):
-    parser = Parser(prog="iosctl", description="iOS Control Bridge")
+    parser = Parser(prog="iosctl", description="Control API")
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)
     capability = commands.add_parser("capabilities", help="List implemented and planned operations")
@@ -50,7 +50,7 @@ def main(argv=None):
     try:
         args = parse(argv)
         if args.command == "capabilities":
-            output = result("capabilities", "verified", data={"project": "iOS Control Bridge",
+            output = result("capabilities", "verified", data={"project": "Control API",
                             "version": __version__, "operations": catalog(args.service)},
                             source="declared_catalog+runtime_probe", complete=True)
         else:

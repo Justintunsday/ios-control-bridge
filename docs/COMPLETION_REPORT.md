@@ -1,4 +1,4 @@
-# 开发完成报告：iOS Control Bridge 0.5.0
+# 开发完成报告：Control API 0.5.0
 
 日期：2026-11-04
 设备环境：iPhone SE 2（`iPhone12,8`）、iOS 16.1.1 / 20B101、Dopamine rootless、`/var/jb`

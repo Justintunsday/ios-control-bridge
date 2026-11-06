@@ -1,6 +1,9 @@
-# iOS Control Bridge
+# Control API
 
 Query and control everyday iOS services from a terminal or an AI client.
+
+Control API uses the existing `ios-control-bridge` package ID and `iosctl`
+command, so current installations and client integrations upgrade directly.
 
 [![Version](https://img.shields.io/badge/version-0.13.0-blue)](pyproject.toml)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB)](pyproject.toml)
