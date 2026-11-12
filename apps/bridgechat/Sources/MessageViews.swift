@@ -107,6 +107,11 @@ private struct ToolStepView: View {
         step.failed ? .red : step.finished ? .green : .accentColor
     }
 
+    private var imageURIs: [String] {
+        var seen = Set<String>()
+        return step.images.filter { seen.insert($0).inserted }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             DisclosureGroup(isExpanded: $expanded) {
@@ -133,7 +138,7 @@ private struct ToolStepView: View {
                 .font(.footnote)
             }
             .tint(Color.secondary)
-            ForEach(Array(step.images.enumerated()), id: \.offset) { _, uri in
+            ForEach(imageURIs, id: \.self) { uri in
                 Button { picture = Picture(uri: uri) } label: {
                     Label("查看截图", systemImage: "photo")
                 }
@@ -155,11 +160,13 @@ private struct ScreenshotView: View {
     @State private var scale: CGFloat = 1
     @State private var previous: CGFloat = 1
     @State private var image: UIImage?
+    @State private var loading = true
     var body: some View {
         NavigationStack {
             GeometryReader { frame in
                 ScrollView([.horizontal, .vertical]) {
                     if let image = image { Image(uiImage: image).resizable().scaledToFit().frame(width: frame.size.width * scale, height: frame.size.height * scale).accessibilityLabel("OpenCode 返回的手机截图") }
+                    else if loading { ProgressView().accessibilityLabel("正在加载图片") }
                     else { Text("图片无法显示").foregroundStyle(.secondary) }
                 }.gesture(MagnificationGesture().onChanged { scale = min(5, max(1, previous * $0)) }.onEnded { _ in previous = scale })
             }.background(Color.black).navigationTitle("手机截图").navigationBarTitleDisplayMode(.inline)
@@ -167,9 +174,11 @@ private struct ScreenshotView: View {
         }
         .preferredColorScheme(.dark)
         .task(id: uri) {
+            loading = true
             image = uri.firstIndex(of: ",")
                 .flatMap { Data(base64Encoded: String(uri[uri.index(after: $0)...])) }
                 .flatMap(UIImage.init(data:))
+            loading = false
         }
     }
 }
