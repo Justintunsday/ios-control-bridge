@@ -16,6 +16,14 @@ struct ModelChecks {
         precondition(rows[1].tools[0].images.count == 1 && !rows[1].tools[0].details.contains("secret"))
         precondition(ChatMessage.parse([["id": "e", "type": "idle", "error": ["message": "模型不可用"]]])[0].error == "模型不可用")
         precondition(ModelChoice(["id": "deepseek-flash", "providerID": "deepseek", "settings": ["apiKey": "private"]]).id == "deepseek/deepseek-flash")
-        print("8 native model checks passed")
+        let paragraphs = MessageText.blocks("# Plan\n\nFirst step\n\nSecond step")
+        precondition(paragraphs.map(\.id) == [0, 2, 4] && paragraphs[0].heading && paragraphs[0].body == "Plan")
+        let code = MessageText.blocks("Before\n\n```swift\nlet value = 1\n\nprint(value)\n```\nAfter")
+        precondition(code.count == 3 && code[1].code && code[1].body == "let value = 1\n\nprint(value)" && code[2].body == "After")
+        let partial = MessageText.blocks("First step\n\nSecond")
+        let completed = MessageText.blocks("First step\n\nSecond step\n\nThird step")
+        precondition(partial.map(\.id) == Array(completed.prefix(2)).map(\.id) && partial[0] == completed[0])
+        precondition(MessageText.blocks("").isEmpty && MessageText.blocks("```\nunclosed\n").first?.body == "unclosed\n")
+        print("12 native model checks passed")
     }
 }

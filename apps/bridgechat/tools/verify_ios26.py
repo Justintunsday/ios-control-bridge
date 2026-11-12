@@ -38,6 +38,24 @@ def diagnostics(simulator):
             (OUTPUT / name).write_text(str(error))
 
 
+def capture(simulator, name, route, appearance, size, model):
+    print("Reviewing " + name, flush=True)
+    run(["xcrun", "simctl", "ui", simulator, "appearance", appearance])
+    run(["xcrun", "simctl", "ui", simulator, "content_size", size])
+    launched = run([
+        "xcrun", "simctl", "launch", "--terminate-running-process", simulator, BUNDLE,
+        "--bridgechat-ui-review", route,
+    ])
+    pid = launched.rsplit(":", 1)[-1].strip()
+    assert pid.isdigit(), launched
+    time.sleep(5)
+    processes = run(["xcrun", "simctl", "spawn", simulator, "launchctl", "list"])
+    assert any(line.split() and line.split()[0] == pid for line in processes.splitlines()), name + " exited"
+    screenshot = OUTPUT / (name + ".png")
+    run(["xcrun", "simctl", "io", simulator, "screenshot", screenshot])
+    return {"name": name, "file": screenshot.name, "device": model, "process_alive": True}
+
+
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     print("Building the iOS 26 device package", flush=True)
@@ -58,11 +76,13 @@ def main():
 
     runtimes = json.loads(run(["xcrun", "simctl", "list", "runtimes", "--json"]))["runtimes"]
     runtime = next(value for value in runtimes if value.get("isAvailable") and value.get("version") == "26.2")
+    run(["defaults", "write", "com.apple.iphonesimulator", "ConnectHardwareKeyboard", "-bool", "false"])
     simulator = run([
         "xcrun", "simctl", "create", "BridgeChat Liquid Glass",
         "com.apple.CoreSimulator.SimDeviceType.iPhone-17", runtime["identifier"],
     ])
     report = {"device_build": device, "simulator_runtime": runtime["version"], "screenshots": [], "sample_data": True}
+    simulators = [simulator]
     try:
         print("Booting the iOS 26.2 simulator", flush=True)
         run(["xcrun", "simctl", "boot", simulator])
@@ -73,7 +93,7 @@ def main():
             "--require-liquid-glass",
         ], timeout=600)
         sim = json.loads((ROOT / "build/latest-simulator.json").read_text())
-        assert sim["native_model_checks_passed"] == 8
+        assert sim["native_model_checks_passed"] == 12
         shutil.copy2(ROOT / "build/latest-simulator.json", OUTPUT / "simulator-manifest.json")
         run(["xcrun", "simctl", "install", simulator, sim["app"]])
         run(["xcrun", "simctl", "status_bar", simulator, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100"])
@@ -84,34 +104,49 @@ def main():
             ("settings-light", "settings", "light", "large"),
             ("models-light", "models", "light", "large"),
             ("chat-accessibility", "chat", "light", "accessibility-extra-extra-large"),
+            ("new-conversation", "new", "light", "large"),
+            ("chat-running", "chat-running", "light", "large"),
+            ("chat-keyboard", "chat-keyboard", "light", "large"),
+            ("settings-accessibility", "settings", "light", "accessibility-extra-extra-large"),
         ]
         for name, route, appearance, size in cases:
-            print("Reviewing " + name, flush=True)
-            run(["xcrun", "simctl", "ui", simulator, "appearance", appearance])
-            run(["xcrun", "simctl", "ui", simulator, "content_size", size])
-            launched = run([
-                "xcrun", "simctl", "launch", "--terminate-running-process", simulator, BUNDLE,
-                "--bridgechat-ui-review", route,
-            ])
-            pid = launched.rsplit(":", 1)[-1].strip()
-            assert pid.isdigit(), launched
-            time.sleep(5)
-            processes = run(["xcrun", "simctl", "spawn", simulator, "launchctl", "list"])
-            assert any(line.split() and line.split()[0] == pid for line in processes.splitlines()), name + " exited"
-            screenshot = OUTPUT / (name + ".png")
-            run(["xcrun", "simctl", "io", simulator, "screenshot", screenshot])
-            report["screenshots"].append({"name": name, "file": screenshot.name, "process_alive": True})
+            report["screenshots"].append(capture(simulator, name, route, appearance, size, "iPhone 17"))
+
+        print("Checking a compact iPhone layout", flush=True)
+        types = json.loads(run(["xcrun", "simctl", "list", "devicetypes", "--json"]))["devicetypes"]
+        identifiers = {value["identifier"] for value in types}
+        compact = None
+        for name, suffix in (("iPhone SE (3rd generation)", "iPhone-SE-3rd-generation"), ("iPhone 13 mini", "iPhone-13-mini"), ("iPhone 16e", "iPhone-16e")):
+            identifier = "com.apple.CoreSimulator.SimDeviceType." + suffix
+            if identifier not in identifiers:
+                continue
+            try:
+                compact = run(["xcrun", "simctl", "create", "BridgeChat Compact", identifier, runtime["identifier"]])
+            except RuntimeError:
+                continue
+            report["compact_device"] = {"name": name, "device_type": identifier}
+            break
+        assert compact, "No supported compact iPhone simulator is installed"
+        simulators.append(compact)
+        run(["xcrun", "simctl", "shutdown", simulator])
+        run(["xcrun", "simctl", "boot", compact])
+        run(["xcrun", "simctl", "bootstatus", compact, "-b"], timeout=300)
+        run(["xcrun", "simctl", "install", compact, sim["app"]])
+        run(["xcrun", "simctl", "status_bar", compact, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100"])
+        for name, route in (("sessions-compact", "sessions"), ("chat-compact", "chat"), ("keyboard-compact", "chat-keyboard")):
+            report["screenshots"].append(capture(compact, name, route, "light", "large", report["compact_device"]["name"]))
         report["simulator_model_checks_passed"] = sim["native_model_checks_passed"]
         report["device_build_excludes_visual_fixtures"] = True
         report["real_glass_symbols_linked"] = True
     except Exception as error:
         report["error"] = str(error)
-        diagnostics(simulator)
+        diagnostics(simulators[-1])
         raise
     finally:
         (OUTPUT / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
-        for operation in ("shutdown", "delete"):
-            subprocess.run(["xcrun", "simctl", operation, simulator], capture_output=True, timeout=60)
+        for target in reversed(simulators):
+            for operation in ("shutdown", "delete"):
+                subprocess.run(["xcrun", "simctl", operation, target], capture_output=True, timeout=60)
     print(json.dumps({"version": device["version"], "sdk": device["sdk_version"], "screenshots": len(report["screenshots"])}))
 
 
