@@ -11,8 +11,21 @@ struct ComposerView: View {
         store.connected && !store.sending && !store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    @ViewBuilder
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+#if BRIDGECHAT_IOS26
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 8) { controls }
+        } else {
+            controls
+        }
+#else
+        controls
+#endif
+    }
+
+    private var controls: some View {
+        VStack(alignment: .leading, spacing: 12) {
             if store.uncertain {
                 Label("发送结果待确认，请先刷新对话。草稿已保留。", systemImage: "exclamationmark.circle")
                     .font(.footnote)
@@ -32,11 +45,13 @@ struct ComposerView: View {
                             .font(.caption2.weight(.semibold))
                             .accessibilityHidden(true)
                     }
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 6)
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .modifier(ComposerModelAppearance())
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .disabled(store.active)
                 .accessibilityLabel("选择模型")
                 .accessibilityValue(store.currentModel?.name ?? "未选择")
@@ -46,6 +61,7 @@ struct ComposerView: View {
                             .font(.footnote.weight(.medium))
                             .frame(minHeight: 44)
                     }
+                    .modifier(ComposerModelAppearance())
                     .disabled(store.stopping)
                 }
             }
@@ -83,23 +99,21 @@ struct ComposerView: View {
     private var inputRow: some View {
 #if BRIDGECHAT_IOS26
         if #available(iOS 26.0, *) {
-            GlassEffectContainer(spacing: 12) {
-                HStack(alignment: .bottom, spacing: 12) {
-                    draftField
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 28))
-                    Button(action: send) {
-                        SendSymbol(sending: store.sending)
-                            .frame(minWidth: 22, minHeight: 22)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .buttonBorderShape(.circle)
-                    .controlSize(.large)
-                    .disabled(!canSend)
-                    .accessibilityLabel(store.active ? "发送追问" : "发送消息")
-                    .accessibilityIdentifier("conversation.send")
+            HStack(alignment: .bottom, spacing: 12) {
+                draftField
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 28))
+                Button(action: send) {
+                    SendSymbol(sending: store.sending)
+                        .frame(minWidth: 22, minHeight: 22)
                 }
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.circle)
+                .controlSize(.large)
+                .disabled(!canSend)
+                .accessibilityLabel(store.active ? "发送追问" : "发送消息")
+                .accessibilityIdentifier("conversation.send")
             }
         } else {
             legacyInputRow
@@ -136,6 +150,21 @@ struct ComposerView: View {
     private func send() {
         onSend()
         Task { await store.send() }
+    }
+}
+
+private struct ComposerModelAppearance: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+#if BRIDGECHAT_IOS26
+        if #available(iOS 26.0, *) {
+            content.buttonStyle(.glass).controlSize(.small)
+        } else {
+            content.buttonStyle(.plain)
+        }
+#else
+        content.buttonStyle(.plain)
+#endif
     }
 }
 

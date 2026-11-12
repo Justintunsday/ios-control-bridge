@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @MainActor
 struct ConnectionSettingsView: View {
@@ -113,24 +114,43 @@ struct ConnectionSettingsView: View {
     }
 }
 
+@MainActor
 private struct BridgeChatIdentity: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .title2) private var iconSize: CGFloat = 56
 
     var body: some View {
-        HStack(spacing: 16) {
-            Image("AppIconNative60x60")
-                .resizable()
-                .scaledToFit()
-                .frame(width: iconSize, height: iconSize)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .accessibilityHidden(true)
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 16))
+        layout {
+            Group {
+                if let icon = BridgeChatArtwork.icon {
+                    Image(uiImage: icon).resizable().scaledToFit()
+                } else {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.largeTitle)
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .frame(width: iconSize, height: iconSize)
+            .clipShape(RoundedRectangle(cornerRadius: iconSize * 0.24))
+            .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
                 Text("BridgeChat").font(.title2.weight(.semibold))
                 Text("与 OpenCode 对话").font(.subheadline).foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
     }
+}
+
+@MainActor
+private enum BridgeChatArtwork {
+    // This command-line build bundles loose PNGs rather than an asset catalog.
+    static let icon: UIImage? = Bundle.main.url(forResource: "AppIconNative60x60@3x", withExtension: "png")
+        .flatMap { UIImage(contentsOfFile: $0.path) }
 }
 
 @MainActor

@@ -95,12 +95,15 @@ private struct ConnectionSummary: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text("OpenCode").font(.body.weight(.medium))
-                Label(
-                    connecting ? "正在连接…" : connected ? "已连接" : "点此连接服务",
-                    systemImage: connected ? "checkmark.circle.fill" : "circle.dotted"
-                )
+                Label {
+                    Text(connecting ? "正在连接…" : connected ? "已连接" : "点此连接服务")
+                        .foregroundStyle(.secondary)
+                } icon: {
+                    Image(systemName: connected ? "checkmark.circle.fill" : "circle.dotted")
+                        .foregroundStyle(connected ? Color.green : Color.secondary)
+                        .accessibilityHidden(true)
+                }
                 .font(.footnote)
-                .foregroundStyle(connected ? Color.green : Color.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if connecting { ProgressView() }

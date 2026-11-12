@@ -56,6 +56,13 @@ def capture(simulator, name, route, appearance, size, model):
     return {"name": name, "file": screenshot.name, "device": model, "process_alive": True}
 
 
+def configure_keyboard(simulator):
+    # Match the simulator-only tutorial setup used by Chromium's iOS test runner.
+    # https://chromium.googlesource.com/chromium/src/+/main/ios/build/bots/scripts/iossim_util.py
+    for key in ("DidShowContinuousPathIntroduction", "DidShowGestureKeyboardIntroduction", "KeyboardDidShowProductivityTutorial", "UIKeyboardDidShowInternationalInfoIntroduction"):
+        run(["xcrun", "simctl", "spawn", simulator, "defaults", "write", "com.apple.keyboard.preferences", key, "-bool", "true"])
+
+
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     print("Building the iOS 26 device package", flush=True)
@@ -87,6 +94,7 @@ def main():
         print("Booting the iOS 26.2 simulator", flush=True)
         run(["xcrun", "simctl", "boot", simulator])
         run(["xcrun", "simctl", "bootstatus", simulator, "-b"], timeout=300)
+        configure_keyboard(simulator)
         print("Building and testing the simulator package", flush=True)
         run([
             sys.executable, ROOT / "build.py", "--platform", "simulator", "--simulator-id", simulator,
@@ -131,6 +139,7 @@ def main():
         run(["xcrun", "simctl", "shutdown", simulator])
         run(["xcrun", "simctl", "boot", compact])
         run(["xcrun", "simctl", "bootstatus", compact, "-b"], timeout=300)
+        configure_keyboard(compact)
         run(["xcrun", "simctl", "install", compact, sim["app"]])
         run(["xcrun", "simctl", "status_bar", compact, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100"])
         for name, route in (("sessions-compact", "sessions"), ("chat-compact", "chat"), ("keyboard-compact", "chat-keyboard")):
