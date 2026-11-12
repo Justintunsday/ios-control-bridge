@@ -22,8 +22,25 @@ def run(arguments, timeout=240):
     return result.stdout.strip()
 
 
+def diagnostics(simulator):
+    commands = {
+        "app-info.txt": ["xcrun", "simctl", "appinfo", simulator, BUNDLE],
+        "launch-log.txt": [
+            "xcrun", "simctl", "spawn", simulator, "log", "show", "--last", "5m", "--style", "compact",
+            "--predicate", 'process == "BridgeChat" OR eventMessage CONTAINS[c] "dev.ioscontrol.bridgechat"',
+        ],
+    }
+    for name, command in commands.items():
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=45)
+            (OUTPUT / name).write_text((result.stdout + result.stderr)[-128000:])
+        except (OSError, subprocess.TimeoutExpired) as error:
+            (OUTPUT / name).write_text(str(error))
+
+
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    print("Building the iOS 26 device package", flush=True)
     run([sys.executable, ROOT / "build.py", "--require-liquid-glass"], timeout=600)
     device = json.loads((ROOT / "build/latest-device.json").read_text())
     executable = Path(device["app"]) / "BridgeChat"
@@ -47,14 +64,17 @@ def main():
     ])
     report = {"device_build": device, "simulator_runtime": runtime["version"], "screenshots": [], "sample_data": True}
     try:
+        print("Booting the iOS 26.2 simulator", flush=True)
         run(["xcrun", "simctl", "boot", simulator])
         run(["xcrun", "simctl", "bootstatus", simulator, "-b"], timeout=300)
+        print("Building and testing the simulator package", flush=True)
         run([
             sys.executable, ROOT / "build.py", "--platform", "simulator", "--simulator-id", simulator,
             "--require-liquid-glass",
         ], timeout=600)
         sim = json.loads((ROOT / "build/latest-simulator.json").read_text())
         assert sim["native_model_checks_passed"] == 8
+        shutil.copy2(ROOT / "build/latest-simulator.json", OUTPUT / "simulator-manifest.json")
         run(["xcrun", "simctl", "install", simulator, sim["app"]])
         run(["xcrun", "simctl", "status_bar", simulator, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100"])
         cases = [
@@ -66,6 +86,7 @@ def main():
             ("chat-accessibility", "chat", "light", "accessibility-extra-extra-large"),
         ]
         for name, route, appearance, size in cases:
+            print("Reviewing " + name, flush=True)
             run(["xcrun", "simctl", "ui", simulator, "appearance", appearance])
             run(["xcrun", "simctl", "ui", simulator, "content_size", size])
             launched = run([
@@ -83,11 +104,14 @@ def main():
         report["simulator_model_checks_passed"] = sim["native_model_checks_passed"]
         report["device_build_excludes_visual_fixtures"] = True
         report["real_glass_symbols_linked"] = True
-        shutil.copy2(ROOT / "build/latest-simulator.json", OUTPUT / "simulator-manifest.json")
+    except Exception as error:
+        report["error"] = str(error)
+        diagnostics(simulator)
+        raise
     finally:
         (OUTPUT / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
-        run(["xcrun", "simctl", "shutdown", simulator])
-        run(["xcrun", "simctl", "delete", simulator])
+        for operation in ("shutdown", "delete"):
+            subprocess.run(["xcrun", "simctl", operation, simulator], capture_output=True, timeout=60)
     print(json.dumps({"version": device["version"], "sdk": device["sdk_version"], "screenshots": len(report["screenshots"])}))
 
 

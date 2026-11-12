@@ -187,7 +187,10 @@ def main():
     if on_ios:
         run(["ldid", "-S" + str(entitlements), executable])
     else:
-        run(["codesign", "--force", "--sign", "-", "--entitlements", entitlements, app])
+        signing = ["codesign", "--force", "--sign", "-"]
+        if not simulator:
+            signing += ["--entitlements", entitlements]
+        run([*signing, app])
         run(["codesign", "--verify", "--strict", app])
 
     ipa = work / ("BridgeChat-" + VERSION + ("-simulator" if simulator else "") + ".ipa")
