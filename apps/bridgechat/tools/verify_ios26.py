@@ -101,21 +101,20 @@ def main():
             "--require-liquid-glass",
         ], timeout=600)
         sim = json.loads((ROOT / "build/latest-simulator.json").read_text())
-        assert sim["native_model_checks_passed"] == 12
+        assert sim["native_model_checks_passed"] == 21
         shutil.copy2(ROOT / "build/latest-simulator.json", OUTPUT / "simulator-manifest.json")
         run(["xcrun", "simctl", "install", simulator, sim["app"]])
         run(["xcrun", "simctl", "status_bar", simulator, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100"])
         cases = [
-            ("sessions-light", "sessions", "light", "large"),
             ("chat-light", "chat", "light", "large"),
             ("chat-dark", "chat", "dark", "large"),
-            ("settings-light", "settings", "light", "large"),
-            ("models-light", "models", "light", "large"),
-            ("chat-accessibility", "chat", "light", "accessibility-extra-extra-large"),
-            ("new-conversation", "new", "light", "large"),
-            ("chat-running", "chat-running", "light", "large"),
-            ("chat-keyboard", "chat-keyboard", "light", "large"),
-            ("settings-accessibility", "settings", "light", "accessibility-extra-extra-large"),
+            ("markdown-text-light", "markdown-text", "light", "large"),
+            ("markdown-text-dark", "markdown-text", "dark", "large"),
+            ("markdown-code-light", "markdown-code", "light", "large"),
+            ("markdown-code-dark", "markdown-code", "dark", "large"),
+            ("markdown-table-light", "markdown-table", "light", "large"),
+            ("markdown-table-dark", "markdown-table", "dark", "large"),
+            ("markdown-accessibility", "markdown-text", "light", "accessibility-extra-extra-large"),
         ]
         for name, route, appearance, size in cases:
             report["screenshots"].append(capture(simulator, name, route, appearance, size, "iPhone 17"))
@@ -142,7 +141,7 @@ def main():
         configure_keyboard(compact)
         run(["xcrun", "simctl", "install", compact, sim["app"]])
         run(["xcrun", "simctl", "status_bar", compact, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100"])
-        for name, route in (("sessions-compact", "sessions"), ("chat-compact", "chat"), ("keyboard-compact", "chat-keyboard")):
+        for name, route in (("markdown-code-compact", "markdown-code"), ("markdown-table-compact", "markdown-table")):
             report["screenshots"].append(capture(compact, name, route, "light", "large", report["compact_device"]["name"]))
         report["simulator_model_checks_passed"] = sim["native_model_checks_passed"]
         report["device_build_excludes_visual_fixtures"] = True

@@ -9,12 +9,18 @@ struct MessageView: View, Equatable {
             if message.user {
                 HStack {
                     Spacer(minLength: 36)
-                    Text(message.body)
+                    MarkdownMessage(text: message.body, fillsWidth: false)
+                        .equatable()
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .foregroundStyle(.primary)
                         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22))
                         .textSelection(.enabled)
+                        .contextMenu {
+                            Button { UIPasteboard.general.string = message.body } label: {
+                                Label("复制原文", systemImage: "doc.on.doc")
+                            }
+                        }
                 }
             } else {
                 if !message.body.isEmpty {
@@ -51,37 +57,6 @@ struct MessageView: View, Equatable {
             }
         }
         .frame(maxWidth: .infinity, alignment: message.user ? .trailing : .leading)
-    }
-}
-
-private struct MarkdownMessage: View, Equatable {
-    let text: String
-
-    var body: some View {
-        let blocks = MessageText.blocks(text)
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(blocks) { block in
-                if block.code {
-                    ScrollView(.horizontal) {
-                        Text(block.body)
-                            .font(.system(.footnote, design: .monospaced))
-                            .padding(14)
-                    }
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-                } else if block.heading {
-                    Text(inline(block.body)).font(.headline)
-                } else {
-                    Text(inline(block.body)).font(.body).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .environment(\.openURL, OpenURLAction { url in
-            ["http", "https"].contains(url.scheme?.lowercased() ?? "") ? .systemAction : .discarded
-        })
-    }
-
-    private func inline(_ value: String) -> AttributedString {
-        (try? AttributedString(markdown: value, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(value)
     }
 }
 

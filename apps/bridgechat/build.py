@@ -15,8 +15,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent
 BUNDLE = "dev.ioscontrol.bridgechat"
-VERSION = "0.4.0"
-BUILD = "6"
+VERSION = "0.5.0"
+BUILD = "7"
 MINIMUM_IOS = "16.1"
 ICON_BASENAME = "AppIconNative60x60"
 
@@ -154,7 +154,7 @@ def main():
         flags.append(str(availability))
 
     test_binary = work / "ModelChecks"
-    test_sources = [ROOT / "Sources/Models.swift", ROOT / "Sources/MessageText.swift", ROOT / "tests/ModelChecks.swift"]
+    test_sources = [ROOT / "Sources/Models.swift", ROOT / "Sources/MarkdownDocument.swift", ROOT / "tests/ModelChecks.swift"]
     if on_ios or simulator:
         test_command = [compiler, *flags, "-Onone", *test_sources, "-o", test_binary]
     else:
@@ -168,7 +168,7 @@ def main():
         checks = run(["xcrun", "simctl", "spawn", args.simulator_id, test_binary])
     else:
         checks = run([test_binary])
-    if "12 native model checks passed" not in checks:
+    if "21 native model checks passed" not in checks:
         raise RuntimeError("The native model checks did not report completion")
     print(checks, flush=True)
 
@@ -210,7 +210,7 @@ def main():
         "app": str(app), "executable_sha256": sha(executable),
         "source_sha256": {path.relative_to(ROOT).as_posix(): sha(path) for path in sorted((ROOT / "Sources").glob("*.swift"))},
         "build_script_sha256": sha(Path(__file__)),
-        "native_model_checks_passed": 12,
+        "native_model_checks_passed": 21,
         "model_checks_runtime": "iOS simulator" if simulator else "iOS device" if on_ios else "macOS",
         "icon_sha256": {path.name: sha(path) for path in sorted(app.glob(ICON_BASENAME + "*.png"))},
         "icon_source_sha256": sha(ROOT / "Assets/BridgeChatIcon.svg"),

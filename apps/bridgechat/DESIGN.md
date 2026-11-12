@@ -1,4 +1,4 @@
-# BridgeChat 0.4 原生布局
+# BridgeChat 0.5 原生界面与 Markdown
 
 ## 版本与架构
 
@@ -43,3 +43,9 @@
 构建脚本执行隔离模型检查。iOS 26 工作流构建设备 IPA，并在模拟器中预览正常字号、深色、辅助功能字号、键盘和任务状态；另使用较小屏幕检查布局。预览数据只存在于显式启动的模拟器夹具中。真实连接、发送、Keychain 与性能测量需分别验收。
 
 已有 Figma 稿仍位于 https://www.figma.com/design/7ISKUCiVN5Q3eEQJW6ZSt6?node-id=5-78 ，此前受字体和调用额度限制；本次交付以实际 SwiftUI 界面与模拟器截图为准。
+
+## Markdown 排版
+
+使用 iOS 15 起可用的 Foundation AttributedString / PresentationIntent 解析段落和嵌套结构，采用 SwiftUI Text、Grid、ScrollView 与系统字号显示。沿用现有数据流和 Liquid Glass 控件；消息内容层保持普通材质。表格／代码水平滚动，正文和引用自动换行，代码原文可单独复制。网络图片保留显式打开动作。
+
+解析与渲染分别由 MarkdownDocument 和 MarkdownMessage 负责，消息按原文变化更新；不新增 Markdown 或网络图片第三方依赖。

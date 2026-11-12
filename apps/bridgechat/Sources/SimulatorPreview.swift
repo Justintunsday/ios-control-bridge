@@ -47,6 +47,58 @@ enum SimulatorPreview {
         case "new":
             store.open(nil)
             store.draft = ""
+        case "markdown-text", "markdown-code", "markdown-table":
+            store.open(nil)
+            store.draft = ""
+            let examples: [String: String] = [
+                "markdown-text": """
+                # Markdown
+
+                **粗体**、*斜体*、~~删除线~~ 与 `inline code`。
+
+                - 支持无序列表
+                  - 也支持嵌套列表
+                - 保留原有段落
+
+                3. 从指定数字开始
+                4. 自动对齐编号
+
+                - [x] 已完成的事项
+                - [ ] 待办事项
+                """,
+                "markdown-code": """
+                ## 引用与代码
+
+                > 原生排版，保留 **强调** 与链接。
+
+                ```swift
+                let greeting = "你好，BridgeChat"
+
+                print(greeting)
+                ```
+
+                ---
+
+                查看 [Swift 官方文档](https://www.swift.org/documentation/)。
+                """,
+                "markdown-table": """
+                ## 表格
+
+                | 项目 | 状态 | 数量 |
+                | :--- | :---: | ---: |
+                | 原生排版 | **完成** | 3 |
+                | 兼容样式 | 支持 | 12 |
+
+                第一行\u{20}\u{20}
+                第二行
+
+                ![示例图片](https://example.com/image.png)
+                """,
+            ]
+            store.messages = [
+                ChatMessage(id: "preview_markdown_user", user: true, body: "**我的问题**：请展示 `Markdown` 排版。", tools: [], error: "", created: 1),
+                ChatMessage(id: "preview_markdown_answer", user: false, body: examples[route] ?? "", tools: [], error: "", created: 2),
+            ]
         default:
             break
         }
