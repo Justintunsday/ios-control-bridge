@@ -29,3 +29,9 @@ Liquid Glass 构建在安装了 Xcode 26 的 Mac 上运行 `python3 build.py --r
 2026-11-12：Xcode 26.2 / Swift 6.2.3 的设备与模拟器构建通过。12 项模型与文本检查在 macOS 和 iOS 26.2 模拟器通过；iPhone 17 与 iPhone SE（第三代）的 13 个截图场景已人工核对，覆盖浅色、深色、大字号、模型面板、空会话、处理中和键盘弹出。[构建记录](https://github.com/Justintunsday/ios-control-bridge/actions/runs/43240665020)
 
 相同源码也在现有 iOS 16.1.1 设备上通过旧 SDK 的兼容构建和 12 项检查。iOS 26 真机端到端交互、VoiceOver 实际朗读与 Instruments 性能采样尚未验收；代码层面的工作量减少不作为帧率或耗时结论。
+
+## 0.5.0 验证记录
+
+2026-11-13：Xcode 26.2 / Swift 6.2.3 的 arm64 设备 IPA 编译、签名校验和 21 项 macOS 模型与 Markdown 检查通过。安装包的源码、可执行文件、图标和 SHA-256 已与构建记录核对；设备产物不含模拟器预览入口。相同源码也在现有 iOS 16.1.1 设备上通过 Swift 5.9.2 / SDK 16.4 的完整兼容构建与 21 项检查。
+
+Markdown 检查覆盖标题、行内样式、嵌套与指定起始编号的列表、任务项、引用、代码空行和缩进、表格对齐与空单元格、链接限制及不完整输入。iOS 26.2 模拟器本轮因启动超时未完成截图验收；此失败发生在安装 App 之前。[构建与启动记录](https://github.com/Justintunsday/ios-control-bridge/actions/runs/43253177241)。Apple Silicon 上的重试记录见[后续验证](https://github.com/Justintunsday/ios-control-bridge/actions/runs/43255484357)。iOS 26 真机交互、VoiceOver 和代码复制按钮的实际点击仍需另行验收。
