@@ -72,6 +72,9 @@ struct SessionsView: View {
             .navigationTitle("对话")
             .searchable(text: $store.search, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索对话")
             .task(id: store.search) {
+#if targetEnvironment(simulator)
+                if SimulatorPreview.route != nil { return }
+#endif
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 if !Task.isCancelled && store.connected {
                     await store.loadSessions()
