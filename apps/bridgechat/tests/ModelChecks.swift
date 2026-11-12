@@ -4,8 +4,8 @@ import Foundation
 struct ModelChecks {
     static func main() {
         var checks = 0
-        func check(_ condition: @autoclosure () -> Bool) {
-            precondition(condition())
+        func check(_ condition: @autoclosure () -> Bool, file: StaticString = #file, line: UInt = #line) {
+            precondition(condition(), file: file, line: line)
             checks += 1
         }
         check(ChatSession(["id": "ses_test", "outcome": "failed", "time": ["busy": 20, "idle": 10]]).active)
@@ -25,7 +25,7 @@ struct ModelChecks {
         check(headings.compactMap { if case .heading(let level) = $0.kind { return level }; return nil } == [1, 2, 3, 4, 5, 6, 1])
 
         let inline = MarkdownDocument.parse("**粗体** *斜体* ~~删除~~ `code`")[0].content
-        let styles = inline.runs.compactMap(\.inlinePresentationIntent)
+        let styles = inline.runs.compactMap { $0.inlinePresentationIntent }
         check(styles.contains { $0.contains(.stronglyEmphasized) } && styles.contains { $0.contains(.emphasized) } && styles.contains { $0.contains(.strikethrough) } && styles.contains { $0.contains(.code) })
 
         let nested = MarkdownDocument.parse("- first\n  - nested\n- second")
@@ -53,7 +53,7 @@ struct ModelChecks {
         check(breaks[0].plainText == "before\nafter" && breaks.last?.kind == .rule)
 
         let links = MarkdownDocument.parse("[safe](https://example.com) [unsafe](javascript:alert)\n\n![预览](https://example.com/photo.png)")
-        let urls = links.flatMap { $0.content.runs.compactMap(\.link) }
+        let urls = links.flatMap { $0.content.runs.compactMap { $0.link } }
         check(urls.count == 2 && urls.allSatisfy(MarkdownDocument.allowedURL) && links[1].plainText == "图片：预览")
 
         let partial = MarkdownDocument.parse("First step\n\nSecond")
