@@ -177,11 +177,11 @@ private struct MarkdownTable: View {
                                 .frame(width: columnWidth, alignment: alignment(cell))
                                 .fixedSize(horizontal: false, vertical: true)
                                 .padding(12)
-                                .background(header(row) ? Color(.secondarySystemBackground) : Color.clear)
-                                .overlay(alignment: .bottom) { Divider() }
                                 .accessibilityAddTraits(header(row) ? .isHeader : [])
                         }
                     }
+                    .background(header(row) ? Color(.secondarySystemBackground) : Color.clear)
+                    .overlay(alignment: .bottom) { Divider() }
                 }
             }
         }
