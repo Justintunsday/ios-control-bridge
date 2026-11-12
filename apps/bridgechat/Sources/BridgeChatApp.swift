@@ -70,7 +70,7 @@ struct SessionsView: View {
             }
             .listStyle(.plain)
             .navigationTitle("对话")
-            .searchable(text: $store.search, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索对话")
+            .searchable(text: $store.search, placement: searchPlacement, prompt: "搜索对话")
             .task(id: store.search) {
 #if targetEnvironment(simulator)
                 if SimulatorPreview.route != nil { return }
@@ -132,6 +132,13 @@ struct SessionsView: View {
         .padding(.horizontal)
         .padding(.vertical, 36)
         .frame(maxWidth: .infinity)
+    }
+
+    private var searchPlacement: SearchFieldPlacement {
+#if BRIDGECHAT_IOS26
+        if #available(iOS 26.0, *) { return .automatic }
+#endif
+        return .navigationBarDrawer(displayMode: .always)
     }
 }
 
@@ -312,7 +319,7 @@ struct ChatView: View {
                         .disabled(store.stopping)
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                 }
                 .accessibilityLabel("对话操作")
             }
