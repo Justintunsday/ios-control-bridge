@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>BridgeChat</title>
+  <defs>
+    <linearGradient id="background" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#169BFF"/>
+      <stop offset="0.48" stop-color="#087DFA"/>
+      <stop offset="1" stop-color="#075CD8"/>
+    </linearGradient>
+    <linearGradient id="prompt" x1="512" y1="420" x2="512" y2="610" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0C84FA"/>
+      <stop offset="1" stop-color="#0666DE"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#background)"/>
+  <path d="M286 202H582C660 202 712 254 712 332V416C712 496 660 550 582 550H320L220 634C208 644 192 635 198 619L216 548C176 528 160 482 160 426V332C160 254 208 202 286 202Z" fill="white" fill-opacity="0.28"/>
+  <path d="M382 290H676C766 290 832 350 832 440V574C832 663 766 726 680 726H652L742 802C751 811 744 824 732 820L570 726H382C292 726 228 663 228 574V440C228 350 292 290 382 290Z" fill="white"/>
+  <path d="M392 432L480 508L392 584" stroke="url(#prompt)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M548 586H656" stroke="url(#prompt)" stroke-width="40" stroke-linecap="round"/>
+</svg>

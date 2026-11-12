@@ -1,0 +1,32 @@
+name: Build BridgeChat for iOS 26
+on:
+  workflow_dispatch:
+  push:
+    paths: ['apps/bridgechat/**', '.github/workflows/build-bridgechat.yml']
+  pull_request:
+    paths: ['apps/bridgechat/**', '.github/workflows/build-bridgechat.yml']
+permissions:
+  contents: read
+concurrency:
+  group: bridgechat-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Build with iOS 26 and verify the simulator views
+        run: python apps/bridgechat/tools/verify_ios26.py
+      - name: Upload the device IPA and simulator evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridgechat-ios26
+          path: apps/bridgechat/build/ios26-review/
+          if-no-files-found: warn
